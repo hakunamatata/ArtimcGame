@@ -1,0 +1,28 @@
+name: Artimc
+version: "${project.version}"
+main: plugin.artimc.ArtimcGamePlugin
+api-version: 1.18
+softdepend:
+  - ProtocolLib
+  - PlaceholderAPI
+  - Multiverse-Core
+  - FastAsyncWorldEdit
+permissions:
+  artimc.place.barrier:
+    description: 是否允许防止屏障方块
+    default: false
+  artimc.game.admin:
+    description: 是否允许配置游戏
+    default: false
+  artimc.admin:
+    description: 是否具有管理员资格
+    default: false
+commands:
+  party:
+    aliases: [队伍]
+  game:
+    aliases: [游戏]
+  partymessage:
+    aliases: [pm]
+  artimcadmin:
+    aliases: [aa]

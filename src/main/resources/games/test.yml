@@ -1,0 +1,46 @@
+name: "测试小游戏"
+desc: "小型地图，建议1v1、2v2"
+type: pvp
+active: false
+#最大队伍人数
+max-parties: 2
+#队伍中最大玩家数
+max-members: 5
+#指定这个游戏的世界名字
+#世界随着游戏创建而创建，随着游戏释放而释放
+world-name: ""
+#预制好的地形文件
+schema-file: ""
+#世界的基线高度
+base-height: 64
+#环境，影响天空盒子视觉效果, NORMAL, NETHER, THE_END
+environment: normal
+
+period:
+  wait: 120
+  game: 120
+  finish: 60
+
+spawn:
+  default:
+    world: world
+    x: 0
+    y: 0
+    z: 0
+    yaw: 0
+    pitch: 0
+  host:
+  guest:
+
+titles:
+  start:
+    title: "&6游戏开始"
+  finish:
+    title: "&c游戏结束"
+  win:
+    title: "&a胜利"
+  loose:
+    title: "&c失败"
+
+scoreboard:
+  title: "&f&l%name%"
