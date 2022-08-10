@@ -62,13 +62,6 @@ public class PvPGame extends Game {
                 log(String.format(" Player: %s, period: %s, current: %s", ((GameBuffEffect) timer).getPlayer().getName(), timer.getPeriod(), timer.getCurrent()));
             }
         }
-//        log(String.format(" "));
-//        for (Set<GameBuffEffect> effects : getGameBuffEffects().values()) {
-//            for (GameBuffEffect buff : effects) {
-//                log(String.format("------- buff: %s --------", buff.getName()));
-//                log(String.format(" Player: %s, period: %s, current: %s", buff.getPlayer().getName(), buff.getPeriod(), buff.getCurrent()));
-//            }+
-//        }
 
         super.onFixedUpdate();
     }
@@ -149,7 +142,8 @@ public class PvPGame extends Game {
      * @return
      */
     public Party getGuestParty() {
-        if (guestPartyName == null) throw new IllegalStateException(getGameLocaleString("guest-party-not-ready"));
+        if (guestPartyName == null)  //throw new IllegalStateException(getGameLocaleString("guest-party-not-ready"));
+            return null;
 
         return getGameParties().get(guestPartyName);
     }
@@ -209,6 +203,7 @@ public class PvPGame extends Game {
             // 加入了客队
             party.getOwner().sendMessage(getGameLocaleString("ur-party-is-guest"));
         }
+
         super.onPartyJoinGame(party);
     }
 
@@ -367,13 +362,14 @@ public class PvPGame extends Game {
 
     @Override
     public void onPlayerRespawn(PlayerRespawnEvent event) {
+        int period = getGameMap().getInvinciblePeriod();
         Player player = event.getPlayer();
         if (getHostParty().contains(player)) {
             event.setRespawnLocation(getGameMap().getSpawn().get("host"));
-            givePlayerInvincibleBuffEffect(player, 5);
+            givePlayerInvincibleBuffEffect(player, period);
         } else if (getGuestParty().contains(player)) {
             event.setRespawnLocation(getGameMap().getSpawn().get("guest"));
-            givePlayerInvincibleBuffEffect(player, 5);
+            givePlayerInvincibleBuffEffect(player, period);
         } else event.setRespawnLocation(getGameMap().getSpawn().get("default"));
         super.onPlayerRespawn(event);
     }

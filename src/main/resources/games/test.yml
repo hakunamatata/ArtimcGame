@@ -15,7 +15,8 @@ schema-file: ""
 base-height: 64
 #环境，影响天空盒子视觉效果, NORMAL, NETHER, THE_END
 environment: normal
-
+#复活只有的无敌时间
+invincible-period: 5
 period:
   wait: 120
   game: 120

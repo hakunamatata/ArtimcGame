@@ -79,9 +79,12 @@ public class DefaultCommand extends CommandExecutor {
             list.add(getCommandString("leave"));
             // 如果是 PvP 游戏
             if (game instanceof PvPGame && !game.isGaming()) {
-                list.add(getCommandString("ready"));
-                list.add(getCommandString("unready"));
                 list.add(getCommandString("rule"));
+                // 补全提示，如果不是队长，不显示准备提示
+                if (getParty() != null && getParty().isOwner(getPlayer())) {
+                    list.add(getCommandString("ready"));
+                    list.add(getCommandString("unready"));
+                }
             }
         }
         return list;

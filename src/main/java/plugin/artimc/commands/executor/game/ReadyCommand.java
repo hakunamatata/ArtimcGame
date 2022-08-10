@@ -25,6 +25,14 @@ public class ReadyCommand extends DefaultCommand {
         if (getGame() == null)
             throw new IllegalStateException(getLocaleString("error.ur-not-in-game"));
 
+        // 游戏内必须要队伍
+        if (getParty() == null)
+            throw new IllegalStateException(getLocaleString("command.ur-not-in-a-party"));
+
+        // 必须是队长才能准备
+        if(!getParty().isOwner(getPlayer()))
+            throw new IllegalStateException(getLocaleString("command.ur-not-party-owner"));
+
         if (getGame() instanceof PvPGame) {
             PvPGame game = (PvPGame) getGame();
             game.setPartyReady(getParty(), true);

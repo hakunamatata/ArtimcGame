@@ -283,7 +283,9 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
      * @param party
      */
     protected void onPartyJoinGame(Party party) {
-
+        // 有新的队伍加入游戏，更新玩家的计分板
+        changeGameScoreboard(useScoreboard(), this.getClass());
+        //useScoreboard();
     }
 
     /**
@@ -428,7 +430,6 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
          * 等待队伍加入的计时器
          */
         new GameTimer(WAIT_PERIOD_TIMER_NAME, getGameMap().getWaitPeriod(), this) {
-
             @Override
             protected void onFinish() {
                 log(String.format("计时器： %s 结束", WAIT_PERIOD_TIMER_NAME));
@@ -484,6 +485,7 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
         return GameScoreboard.class;
     }
 
+    // 修改计分板
     private void changeGameScoreboard(Class<? extends GameScoreboard> type, Class<? extends Game> game) {
         // 将游戏内队伍的计分板设置为游戏计分板
         try {

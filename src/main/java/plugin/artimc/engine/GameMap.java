@@ -38,6 +38,8 @@ public class GameMap {
     private String looseTitle = "";
     private String looseSubTitle = "";
 
+    private int invinciblePeriod = 5;
+
     public Plugin getPlugin() {
         return plugin;
     }
@@ -126,6 +128,10 @@ public class GameMap {
         return getLocation(plugin.getConfig().getConfigurationSection("lobby"));
     }
 
+    public int getInvinciblePeriod() {
+        return invinciblePeriod;
+    }
+
     private int gamePeriod = 120;
     private int finishPeriod = 10;
 
@@ -157,6 +163,9 @@ public class GameMap {
         winSubTitle = ChatColor.translateAlternateColorCodes('&', config.getString("titles.win.subtitle", ""));
         looseTitle = ChatColor.translateAlternateColorCodes('&', config.getString("titles.loose.title", ""));
         looseSubTitle = ChatColor.translateAlternateColorCodes('&', config.getString("titles.loose.subtitle", ""));
+
+        invinciblePeriod = config.getInt("invincible-period", 5);
+
         initiallizePeriod();
     }
 
@@ -169,20 +178,14 @@ public class GameMap {
         int cfgGamePeriod = config.getInt("period.game");
         int cfgFinishPeriod = config.getInt("period.finish");
 
-        if (cfgWaitPeriod > 0)
-            waitPeriod = cfgWaitPeriod;
-        else if (defWaitPeriod > 0)
-            waitPeriod = defWaitPeriod;
+        if (cfgWaitPeriod > 0) waitPeriod = cfgWaitPeriod;
+        else if (defWaitPeriod > 0) waitPeriod = defWaitPeriod;
 
-        if (cfgGamePeriod > 0)
-            gamePeriod = cfgGamePeriod;
-        else if (defGamePeriod > 0)
-            gamePeriod = defGamePeriod;
+        if (cfgGamePeriod > 0) gamePeriod = cfgGamePeriod;
+        else if (defGamePeriod > 0) gamePeriod = defGamePeriod;
 
-        if (cfgFinishPeriod > 0)
-            finishPeriod = cfgFinishPeriod;
-        else if (defFinishPeriod > 0)
-            finishPeriod = defFinishPeriod;
+        if (cfgFinishPeriod > 0) finishPeriod = cfgFinishPeriod;
+        else if (defFinishPeriod > 0) finishPeriod = defFinishPeriod;
     }
 
     public String getName() {
