@@ -1196,6 +1196,7 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
         }
     }
 
+
     public void onPlayerBucketEmpty(final PlayerBucketEmptyEvent event) {
         if (!isGaming()) {
             event.setCancelled(true);

@@ -12,7 +12,7 @@ import plugin.artimc.commands.executor.game.*;
 public class GameCommandContext extends CommandContext {
 
     public GameCommandContext(@NotNull CommandSender sender, @NotNull Command command, String label, String[] args,
-            Plugin plugin) {
+                              Plugin plugin) {
         super(sender, command, label, args, plugin);
     }
 
@@ -32,6 +32,9 @@ public class GameCommandContext extends CommandContext {
 
         if (getArgs()[0].equals(this.getCommandCofniguration().getString("rule")))
             return new RuleCommand(this);
+
+        if (getArgs()[0].equals(this.getCommandCofniguration().getString("move")))
+            return new MoveCommand(this);
 
         if (getArgs()[0].equals(this.getCommandCofniguration().getString("set")))
             return new SetCommand(this);

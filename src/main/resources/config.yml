@@ -60,6 +60,7 @@ commands:
     ready: 准备
     unready: 取消准备
     rule: 规则
+    move: 移动
     finish: 结束
     set: 设置
     save: 保存
@@ -72,7 +73,11 @@ params:
   party:
     set:
       friendlyFire: 队友误伤
+
   game:
+    party:
+      host: 主队
+      guest: 客队
     set:
       default-spawn: 默认出生点
       host-spawn: 主队出生点

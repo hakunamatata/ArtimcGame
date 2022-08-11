@@ -16,6 +16,8 @@ public class RuleCommand extends DefaultCommand {
         // ------0-----1----2-------3---
         // game rule item #附魔金 #enable
         // game rule friendlyFire #enable
+
+        // game move player host/guest
         /**
          * Checkings
          */
@@ -34,7 +36,7 @@ public class RuleCommand extends DefaultCommand {
                 throw new IllegalStateException(getLocaleString("game.rule-err-game-is-gaming"));
 
             if (!pvpGame.getHostParty().contains(getPlayer().getUniqueId()))
-                throw new IllegalStateException(getLocaleString("game.rule-err-party-not-host"));
+                throw new IllegalStateException(getLocaleString("error.party-not-host"));
 
             // 禁用物品的规则
             if (tryGetArg(1).equals(getParamsString("rule.item"))) {

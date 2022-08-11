@@ -1,11 +1,7 @@
 package plugin.artimc.engine;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
@@ -20,6 +16,7 @@ import plugin.artimc.ArtimcGameManager;
 import plugin.artimc.ArtimcGamePlugin;
 import plugin.artimc.scoreboard.BaseScoreboard;
 import plugin.artimc.scoreboard.PartyScoreboard;
+import plugin.artimc.utils.Utils;
 
 /**
  * 描述：BaseParty，队伍管理器
@@ -204,8 +201,7 @@ public class Party {
         HashSet<Player> onlinePlayers = new HashSet<>();
         for (UUID uuid : players) {
             Player player = getOnlinePlayer(uuid);
-            if (player != null)
-                onlinePlayers.add(player);
+            if (player != null) onlinePlayers.add(player);
         }
         return Collections.unmodifiableSet(onlinePlayers);
     }
@@ -376,8 +372,7 @@ public class Party {
      * @throws IllegalStateException 如果玩家不咋这个队伍中
      */
     public boolean transfer(UUID player) throws IllegalStateException {
-        if (!players.contains(player))
-            throw new IllegalStateException("你要转让的玩家不在队伍中");
+        if (!players.contains(player)) throw new IllegalStateException("你要转让的玩家不在队伍中");
         owner = player;
         return true;
     }
@@ -413,11 +408,9 @@ public class Party {
      */
     public boolean invite(UUID player) throws IllegalStateException {
         if (players.contains(player))
-            throw new IllegalStateException(getLocaleString("command.player-already-in-party")
-                    .replace("%player_name%", plugin.getServer().getPlayer(player).getName()));
+            throw new IllegalStateException(getLocaleString("command.player-already-in-party").replace("%player_name%", plugin.getServer().getPlayer(player).getName()));
         if (getManager().playerInParty(player))
-            throw new IllegalStateException(getLocaleString("command.player-in-another-party")
-                    .replace("%player_name%", plugin.getServer().getPlayer(player).getName()));
+            throw new IllegalStateException(getLocaleString("command.player-in-another-party").replace("%player_name%", plugin.getServer().getPlayer(player).getName()));
         return invitees.add(player);
     }
 
@@ -444,8 +437,7 @@ public class Party {
      */
     public boolean uninvite(UUID player) throws IllegalStateException {
         if (players.contains(player))
-            throw new IllegalStateException(getLocaleString("command.player-already-in-party")
-                    .replace("%player_name%", plugin.getServer().getPlayer(player).getName()));
+            throw new IllegalStateException(getLocaleString("command.player-already-in-party").replace("%player_name%", plugin.getServer().getPlayer(player).getName()));
         return invitees.remove(player);
     }
 
@@ -500,12 +492,10 @@ public class Party {
      * @param chat 消息内容
      */
     public void chat(Player player, String chat) {
-        if (!this.contains(player) || chat.isBlank())
-            return;
+        if (!this.contains(player) || chat.isBlank()) return;
 
         String format = ChatColor.translateAlternateColorCodes('&', getPlugin().getConfig().getString("chat.format"));
-        String message = format.replace("%player_name%", player.getName())
-                .replace("%message%", chat);
+        String message = format.replace("%player_name%", player.getName()).replace("%message%", chat);
         sendMessage(message);
     }
 
@@ -552,13 +542,28 @@ public class Party {
      */
     private void updateScoreboardOnPlayerEvent(Player player) {
         final UUID uuid = player.getUniqueId();
-        getPlugin().getServer().getScheduler().scheduleSyncDelayedTask(getPlugin(),
-                () -> {
-                    if (getOnlinePlayers().isEmpty())
-                        dismiss();
-                    else
-                        updatePlayerScoreboard(uuid);
-                }, 5);
+        getPlugin().getServer().getScheduler().scheduleSyncDelayedTask(getPlugin(), () -> {
+            if (getOnlinePlayers().isEmpty()) dismiss();
+            else updatePlayerScoreboard(uuid);
+        }, 5);
+    }
+
+    /**
+     * 静默移动玩家
+     *
+     * @param player
+     */
+    public void removeSilent(Player player) {
+        players.remove(player.getUniqueId());
+    }
+
+    /**
+     * 静默添加
+     *
+     * @param player
+     */
+    public void addSilent(Player player) {
+        players.add(player.getUniqueId());
     }
 
     /**
@@ -633,6 +638,12 @@ public class Party {
      * @param player
      */
     public void onPlayerQuit(Player player) {
+        // 离线，将队长交给其他成员
+        if (isOwner(player)) {
+            Player newOwner = Utils.getRandomElement(List.of(getOnlinePlayers().toArray(new Player[0])));
+            setOwner(newOwner);
+            sendMessage(Component.text(getLocaleString("command.player-promoted-as-owner").replace("%player_name%", newOwner.getName())));
+        }
         getManager().disablePartyChannel(player.getUniqueId());
         updateScoreboardOnPlayerEvent(player);
     }

@@ -55,15 +55,15 @@ public class PvPGameScoreboard extends GameScoreboard {
         if (getGame().getGameStatus() == GameStatus.WAITING) {
             if (getGame().getHostParty().contains(player.getUniqueId())) {
                 if (getGame().getHostParty().isOwner(player)) {
-                    color = getGame().isHostReady() ? "&a✔ " : "  ";
+                    color = getGame().isHostReady() ? "&a✔★ " : "&e★  ";
                 } else {
-                    color = getGame().isHostReady() ? "&a  " : "  ";
+                    color = getGame().isHostReady() ? "&a●  " : "&e●  ";
                 }
             } else if (getGame().getGuestParty().contains(player.getUniqueId())) {
                 if (getGame().getGuestParty().isOwner(player)) {
-                    color = getGame().isGuestReady() ? "&a✔ " : "  ";
+                    color = getGame().isGuestReady() ? "&a✔★ " : "&e★  ";
                 } else {
-                    color = getGame().isGuestReady() ? "&a  " : "  ";
+                    color = getGame().isGuestReady() ? "&a●  " : "&e●  ";
                 }
             }
         }

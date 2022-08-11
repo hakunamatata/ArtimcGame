@@ -4,9 +4,35 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
 
+import java.util.List;
+
 public class Utils {
 
     private Utils() {
+    }
+
+    /**
+     * Removes a random element from the given list
+     *
+     * @param list List
+     * @param <T> Type of object
+     * @return Element that was removed
+     */
+    public static <T> T removeRandomElement(List<T> list) {
+        int index = (int) (Math.random() * list.size());
+        return list.remove(index);
+    }
+
+    /**
+     * Returns a random element from the given list
+     *
+     * @param list List
+     * @param <T> Type of object
+     * @return Random element
+     */
+    public static <T> T getRandomElement(List<T> list) {
+        int index = (int) (Math.random() * list.size());
+        return list.get(index);
     }
 
     /**

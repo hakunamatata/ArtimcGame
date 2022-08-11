@@ -3,6 +3,7 @@ package plugin.artimc.game;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import org.bukkit.GameMode;
 import org.bukkit.boss.BarColor;
@@ -14,6 +15,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.plugin.Plugin;
 
+import org.jetbrains.annotations.NotNull;
 import plugin.artimc.engine.*;
 import plugin.artimc.scoreboard.GameScoreboard;
 import plugin.artimc.utils.StringUtil;
@@ -30,6 +32,8 @@ public class PvPGame extends Game {
     private PvPStatstic pvpStatstic;
     private PvPItemControl pvpItemController;
 
+    private Set<UUID> moveRequest;
+
     public PvPGame(String pvpGameName, Plugin plugin) {
         super(pvpGameName, plugin);
     }
@@ -42,6 +46,43 @@ public class PvPGame extends Game {
 
     public PvPItemControl getPvpItemController() {
         return pvpItemController;
+    }
+
+    /**
+     * 算了，不发了
+     * 玩家不同意，可以退出游戏
+     * --------------------
+     * 给玩家发送变更队伍的要求
+     * 玩家接受之后，改变玩家的队伍
+     *
+     * @param player
+     */
+    public void movePlayerRequest(Player player) {
+        //player.sendMessage();
+    }
+
+    /**
+     * 将玩家移动到指定队伍
+     *
+     * @param player
+     * @param party
+     */
+    public void movePlayer(@NotNull Player player, Party party) {
+
+        if (party == null || party.contains(player))
+            throw new IllegalStateException(getGameLocaleString("move-err-custom"));
+
+        Party playerParty = getManager().getPlayerParty(player);
+
+        // 将玩家队伍设置为新的队伍
+        // 更新玩家的计分板
+        playerParty.removeSilent(player);
+        party.addSilent(player);
+        getManager().setPlayerParty(player, party);
+        // 更新双方队伍的计分板
+        party.updateScoreboard();
+        playerParty.updateScoreboard();
+        player.sendMessage(getGameLocaleString("move-success").replace("%party_name%", party.getName()));
     }
 
     @Override
@@ -341,6 +382,9 @@ public class PvPGame extends Game {
                 // onFinish 似乎不是每次都执行
                 getGame().setPlayerInvincible(getPlayer(), false);
                 getPlayer().setGlowing(false);
+                //MiniGameUtils.clearPotionEffects(player);
+                //player.addPotionEffect(new PotionEffect(PotionEffectType.HEALTH_BOOST, getPeriod() * 20, 255,
+                //true, false, false));
                 log(String.format("%s 被解除了 无敌 效果", player.getName(), getPeriod()));
                 super.onFinish();
             }

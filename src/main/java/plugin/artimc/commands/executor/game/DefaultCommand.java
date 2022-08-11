@@ -30,10 +30,8 @@ public class DefaultCommand extends CommandExecutor {
     }
 
     protected YamlConfiguration getGameConfiguration(String game) {
-        if (game.isEmpty())
-            return null;
-        if (getPlugin().getGameConfigurations() == null)
-            return null;
+        if (game.isEmpty()) return null;
+        if (getPlugin().getGameConfigurations() == null) return null;
         return getPlugin().getGameConfigurations().get(game);
     }
 
@@ -47,10 +45,8 @@ public class DefaultCommand extends CommandExecutor {
         Game game = getGame();
         String prefixString = "";
         if (prefix) {
-            if (game == null)
-                prefixString = super.getLocaleString("prefix-default-game", false);
-            else
-                prefixString = super.getLocaleString("prefix-game", false).replace("%game%", game.getGameName());
+            if (game == null) prefixString = super.getLocaleString("prefix-default-game", false);
+            else prefixString = super.getLocaleString("prefix-game", false).replace("%game%", game.getGameName());
         }
         return prefixString + super.getLocaleString(path, false);
     }
@@ -66,10 +62,7 @@ public class DefaultCommand extends CommandExecutor {
         List<String> list = new ArrayList<>();
         // 如果具有管理权限
         if (hasPermission("artimc.game.admin"))
-            list.addAll(List.of(
-                    getCommandString("set"),
-                    getCommandString("save"),
-                    getCommandString("reload")));
+            list.addAll(List.of(getCommandString("set"), getCommandString("save"), getCommandString("reload")));
         // 当前没有正在进行的游戏
         if (game == null) {
             list.add(getCommandString("join"));
@@ -84,6 +77,11 @@ public class DefaultCommand extends CommandExecutor {
                 if (getParty() != null && getParty().isOwner(getPlayer())) {
                     list.add(getCommandString("ready"));
                     list.add(getCommandString("unready"));
+                    // 主队队长显示 移动成员的提示
+                    PvPGame pvpGame = (PvPGame) game;
+                    if (pvpGame.getHostParty() != null && pvpGame.getHostParty().equals(getParty())) {
+                        list.add(getCommandString("move"));
+                    }
                 }
             }
         }

@@ -25,6 +25,7 @@ public class PvPStatstic {
     private Map<UUID, Integer> killMap;
     private Map<UUID, Integer> deathMap;
     private Map<UUID, Integer> assistMap;
+
     public PvPStatstic(PvPGame game) {
         this.game = game;
         damageMap = new HashMap<>();
@@ -37,7 +38,7 @@ public class PvPStatstic {
 
     /**
      * 计算 造成的伤害与防御数值
-     * 
+     *
      * @param attacker
      * @param defencer
      * @param damage
@@ -67,15 +68,40 @@ public class PvPStatstic {
         }
     }
 
-    public void onDeath(int tick, Player player, Player killer) {
-        if (player instanceof Player && killer instanceof Player) {
-            UUID p = player.getUniqueId();
-            UUID k = killer.getUniqueId();
-            incK(k);
-            incD(p);
-            for (UUID a : getAssists(tick, k, p)) {
-                incA(a);
+    /**
+     * 获取玩家最近一次造成的伤害来源
+     * 6秒内最近一次的伤害
+     *
+     * @param currentTick
+     * @param player
+     * @return
+     */
+    private UUID getLastDamager(int currentTick, Player player) {
+        int maxTick = -1;
+        UUID attacker = null;
+        // 获取最近一次的攻击玩家
+        for (PvPDamage dmg : damageQueue) {
+            if (dmg.tick > maxTick && player.getUniqueId().equals(dmg.defencer)) {
+                maxTick = dmg.tick;
+                attacker = dmg.attacker;
             }
+        }
+        return attacker;
+    }
+
+    public void onDeath(int tick, Player player, Player killer) {
+        UUID p = player.getUniqueId();
+        UUID k;
+        if (killer instanceof Player)
+            k = killer.getUniqueId();
+        else
+            k = getLastDamager(tick, player);
+
+        if (killer == null) return;
+        incK(k);
+        incD(p);
+        for (UUID a : getAssists(tick, k, p)) {
+            incA(a);
         }
     }
 
@@ -186,6 +212,22 @@ public class PvPStatstic {
         return ret;
     }
 
+    public int getPartyDeathes(Party party) {
+        int ret = 0;
+        for (UUID uuid : party.getPlayers()) {
+            ret += getPlayerDeathes(uuid);
+        }
+        return ret;
+    }
+
+    public int getPartyAssists(Party party) {
+        int ret = 0;
+        for (UUID uuid : party.getPlayers()) {
+            ret += getPlayerAssits(uuid);
+        }
+        return ret;
+    }
+
     public float getPartyCausedDamage(Party party) {
         double ret = 0;
         for (UUID uuid : party.getPlayers()) {
@@ -202,47 +244,55 @@ public class PvPStatstic {
         return (float) ret;
     }
 
-    public Party getMvpParty(){
+    /**
+     * 人数少，影响不大
+     *
+     * @return
+     */
+    public Party getMvpParty() {
         Party party = null;
         float partyScore = -1;
-        for(Party p:game.getGameParties().values()){
+        for (Party p : game.getGameParties().values()) {
             float party_damage = getPartyCausedDamage(p);
-            int party_kills = getPartyKills(p);
-            float score = party_damage / 10 * party_kills;
-            if(score > partyScore){
+            int multiplier = getPartyKills(p) + getPartyAssists(p) - getPartyDeathes(p);
+            if (multiplier <= 0) multiplier = 1;
+            float score = party_damage / 10 * multiplier;
+            if (score > partyScore) {
                 partyScore = score;
                 party = p;
             }
-        };
+        }
         return party;
     }
 
     /**
      * 在游戏结束后获取队伍的 总结数据
+     *
      * @param party 队伍
      * @return
      */
-    public String getPartySummary(Party party){
-        String summary = game.getPlugin().getLocaleString("game.party-summary-pvp-game-finish",false);
-        return summary.replace("%party_name%", party.getPartyName().toString() +  party.getName())
-                .replace("%damages%",String.format("%.2f", getPartyCausedDamage(party)))
-                .replace("%kills%",String.valueOf(getPartyKills(party)))
-                .replace("%defence%",String.format("%.2f",getPartyDefendDamage(party)));
+    public String getPartySummary(Party party) {
+        String summary = game.getPlugin().getLocaleString("game.party-summary-pvp-game-finish", false);
+        return summary.replace("%party_name%", party.getPartyName().toString() + party.getName())
+                .replace("%damages%", String.format("%.2f", getPartyCausedDamage(party)))
+                .replace("%kills%", String.valueOf(getPartyKills(party)))
+                .replace("%defence%", String.format("%.2f", getPartyDefendDamage(party)));
     }
 
     /**
      * 在游戏结束后获取 玩家的 总结数据
+     *
      * @param player
      * @return
      */
-    public String getPlayerSummary(Player player){
+    public String getPlayerSummary(Player player) {
         //: "%player_name% 的数据：&6伤害%damages% &a击杀%kills% &e助攻%assits% &c死亡%deathes%"
         String summary = game.getPlugin().getLocaleString("game.player-summary-pvp-game-finish");
-        return summary.replace("%player_name%",player.getName())
-                .replace("%damages%",String.format("%.2f", getPlayerCausedDamage(player)))
-                .replace("%kills%",String.valueOf(getPlayerKills(player)))
-                .replace("%assits%",String.valueOf(getPlayerAssits(player)))
-                .replace("%deathes%",String.valueOf(getPlayerDeathes(player)));
+        return summary.replace("%player_name%", player.getName())
+                .replace("%damages%", String.format("%.2f", getPlayerCausedDamage(player)))
+                .replace("%kills%", String.valueOf(getPlayerKills(player)))
+                .replace("%assits%", String.valueOf(getPlayerAssits(player)))
+                .replace("%deathes%", String.valueOf(getPlayerDeathes(player)));
 
     }
 

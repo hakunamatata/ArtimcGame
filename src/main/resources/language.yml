@@ -27,6 +27,8 @@ error:
   unsupport-settings: "&7不支持这项配置"
   unknown-setting: "&7请指定你的设置项"
   invalid-number: "&c参数值应该是一个整数"
+  party-not-host: "&7只有主队才能这么做"
+  cant-move-urself: "&7你不能移动你自己"
 
 admin:
 
@@ -110,7 +112,7 @@ game:
   ur-party-is-guest: "&7你在 &a客队 &7使用指令：/game <准备 | 取消准备> 设置准备状态"
   host-party-not-ready: "&7当前游戏主队未就绪"
   guest-party-not-ready: "&7当前游戏客队未就绪"
-  rule-err-party-not-host: "&7只有主队才能设置游戏规则"
+  rule-err-party-not-host: "&7只有主队才能这么做"
   rule-err-game-is-gaming: "&7游戏已经开始，你无法进行设置游戏规则"
   rule-changed-ban-item: "&c%item% 被禁止使用"
   rule-changed-parties-unready: "&7游戏规则已经变化，请各方队伍重新准备"
@@ -121,4 +123,8 @@ game:
   party-summary-pvp-game-finish: "%party_name% 的数据：&6伤害%damages% &a击杀%kills% &e吸收%defence%"
   player-summary-pvp-game-finish: "%player_name% 的数据：&6伤害%damages% &a击杀%kills% &e助攻%assits% &c死亡%deathes%"
 
-  game-finish-reason-missing-companion: "%party_name%中途离开了游戏，游戏结束"
+  game-finish-reason-missing-companion: "&7%party_name%中途离开了游戏，游戏结束"
+  move-err-player-is-party-owner: "&7%player_name% 是 %party_name% &7队长，你无法移动他"
+  move-err-game-is-running: "&7游戏已经开始，你无法移动队伍成员"
+  move-err-custom: "&7你无法移动这个玩家"
+  move-success: "&7你被移动到了 %party_name%"

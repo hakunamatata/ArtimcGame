@@ -194,6 +194,18 @@ public class ArtimcGameManager implements Listener {
     }
 
     /**
+     * 强制设置玩家的队伍
+     * 不明白请勿随便调用
+     *
+     * @param player
+     * @param party
+     */
+    public void setPlayerParty(Player player, Party party) {
+        parties.put(player.getUniqueId(), party);
+    }
+
+
+    /**
      * 让玩家加入一个游戏
      *
      * @param player Player
@@ -453,4 +465,13 @@ public class ArtimcGameManager implements Listener {
         }
     }
 
+//    @EventHandler
+//    public void onExplode(BlockExplodeEvent event) {
+//        //event.getBlock().getWorld()
+//        for (Game game : games.values()) {
+//            if (game.getGameMap().getWorldName().equals(event.getBlock().getWorld().getName())) {
+//
+//            }
+//        }
+//    }
 }

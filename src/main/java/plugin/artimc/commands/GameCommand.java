@@ -24,7 +24,7 @@ public class GameCommand implements CommandExecutor, TabCompleter {
 
     /**
      * 游戏与队伍管理器
-     * 
+     *
      * @return
      */
     protected ArtimcGameManager getManager() {
@@ -33,7 +33,7 @@ public class GameCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
-            @NotNull String label, @NotNull String[] args) {
+                                                @NotNull String label, @NotNull String[] args) {
         try {
             CommandContext context = new GameCommandContext(sender, command, label, args, plugin);
             return context.getExecutor().suggest();
@@ -48,7 +48,7 @@ public class GameCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label,
-            @NotNull String[] args) {
+                             @NotNull String[] args) {
         try {
             CommandContext context = new GameCommandContext(sender, command, label, args, plugin);
             return context.getExecutor().execute();
