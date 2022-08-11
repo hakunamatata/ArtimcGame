@@ -49,6 +49,7 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
     private BossBar statusBar;
     private int currentTick = 0;
     private GameStatus gameStatus;
+    private boolean enableStatusBar = true;
     private final Map<String, GameTimer> timerManager;
     private GameFinishReason finishReason = null;
     private final Party observeParty;
@@ -60,6 +61,8 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
     private boolean isRunning = false;
     private boolean isClosing = false;
     private GameWorld world;
+    private int gameStartAt = -1;
+    private int gameFinishAt = 999999999;
     // 玩家的Buff效果
     private final Set<UUID> invinciblePlayers;
 
@@ -132,6 +135,14 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
         return getLocaleString("game." + path, prefix);
     }
 
+    public boolean isEnableStatusBar() {
+        return enableStatusBar;
+    }
+
+    public void setEnableStatusBar(boolean enableStatusBar) {
+        this.enableStatusBar = enableStatusBar;
+    }
+
     protected String getLocaleString(final String path, final boolean prefix) {
         String prefixString = "";
         if (prefix) {
@@ -174,6 +185,17 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
     public Map<PartyName, Party> getGameParties() {
         return gameParties;
     }
+
+    /**
+     * 游戏持续时间（仅限游戏中）
+     *
+     * @return
+     */
+    public int getGamingLifeTime() {
+        if (!isGaming()) return -1;
+        return (getCurrentTick() - gameStartAt) / 20;
+    }
+
 
     /**
      * 计时器控制器
@@ -447,7 +469,7 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
 
             @Override
             protected void onUpdate() {
-                getStatusBar().setProgress((double) getCurrent() / (double) getPeriod());
+                if (enableStatusBar) getStatusBar().setProgress((double) getCurrent() / (double) getPeriod());
                 super.onUpdate();
             }
         }.start();
@@ -502,6 +524,8 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
     private void gameStart() {
         if (timerManager.get(Game.WAIT_PERIOD_TIMER_NAME) != null)
             timerManager.get(Game.WAIT_PERIOD_TIMER_NAME).close();
+        // 记录游戏开始的时间刻
+        gameStartAt = getCurrentTick();
         // 修改队伍的计分板
         changeGameScoreboard(useScoreboard(), this.getClass());
         /**
@@ -519,7 +543,7 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
 
             @Override
             protected void onUpdate() {
-                getStatusBar().setProgress((double) getCurrent() / (double) getPeriod());
+                if (enableStatusBar) getStatusBar().setProgress((double) getCurrent() / (double) getPeriod());
             }
         }.start();
         log(String.format("游戏开始，计时器：%s 启动", GAME_PERIOD_TIMER_NAME));
@@ -542,6 +566,7 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
     private void gameFinish(final GameFinishReason reason) {
         if (timerManager.get(Game.GAME_PERIOD_TIMER_NAME) != null)
             timerManager.get(Game.GAME_PERIOD_TIMER_NAME).close();
+        gameFinishAt = getCurrentTick();
         finishReason = reason;
         log(String.format("游戏结束，原因：%s", reason));
         /**
@@ -561,7 +586,7 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
 
             @Override
             protected void onUpdate() {
-                getStatusBar().setProgress((double) getCurrent() / (double) getPeriod());
+                if (enableStatusBar) getStatusBar().setProgress((double) getCurrent() / (double) getPeriod());
                 super.onUpdate();
             }
         }.start();

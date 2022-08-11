@@ -7,8 +7,8 @@ max-parties: 2
 #队伍中最大玩家数
 max-members: 5
 #指定这个游戏的世界名字
-#世界随着游戏创建而创建，随着游戏释放而释放
-world-name: ""
+#世界随着游戏创建而创建，随着游戏释放而重置
+world-name: "world"
 #预制好的地形文件
 schema-file: ""
 #世界的基线高度
@@ -17,6 +17,18 @@ base-height: 64
 environment: normal
 #复活只有的无敌时间
 invincible-period: 5
+#地图资源
+resources:
+  #计时器
+  timer:
+    period: 10
+    freq: 120
+  items:
+    - "emerald:4,emerald:8,emerald:12,emerald:16,emerald:20,emerald:24,emerald:28,emerald:32,diamond:1,diamond:2,diamond:3,diamond:4,netherite_scrap:1,netherite_scrap:2;-11,73,-15"
+    - "oak_log:16,spruce_log:16,jungle_log:16,acacia_log:16,dark_oak_log:16;37,73,29"
+    - "oak_log:32,spruce_log:32,jungle_log:32,acacia_log:32,dark_oak_log:32,oak_log:64,spruce_log:64,jungle_log:64,acacia_log:64,dark_oak_log:64;35,73,41"
+    - "oak_log:16,spruce_log:16,jungle_log:16,acacia_log:16,dark_oak_log:16;23,73,39"
+
 period:
   wait: 120
   game: 120

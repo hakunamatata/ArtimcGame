@@ -9,6 +9,7 @@ import plugin.artimc.engine.Game;
 import plugin.artimc.engine.GameMap;
 import plugin.artimc.engine.GameStatus;
 import plugin.artimc.game.PvPGame;
+import plugin.artimc.instance.LogFactoryGame;
 
 public class JoinCommand extends DefaultCommand {
 
@@ -49,16 +50,12 @@ public class JoinCommand extends DefaultCommand {
 
         if (getManager().containesGame(gameName)) {
             game = getManager().getGame(gameName);
-//            // 临时修一下
-//            if (game.getOnlinePlayers().isEmpty()) {
-//                game.close();
-//                throw new IllegalStateException(getLocaleString("game.u-can-not-join"));
-//            }
+
         } else {
             GameMap map = new GameMap(getPlugin().getGameConfigurations().get(gameName), getPlugin());
             switch (map.getType()) {
                 default:
-                    game = new PvPGame(gameName, getPlugin());
+                    game = new LogFactoryGame(gameName, getPlugin());
             }
         }
 

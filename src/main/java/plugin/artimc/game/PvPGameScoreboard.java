@@ -13,6 +13,7 @@ import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 import plugin.artimc.engine.GameStatus;
 import plugin.artimc.engine.Party;
+import plugin.artimc.instance.LogFactoryGame;
 import plugin.artimc.scoreboard.BaseScoreboard;
 import plugin.artimc.scoreboard.GameScoreboard;
 
@@ -21,8 +22,10 @@ public class PvPGameScoreboard extends GameScoreboard {
     public PvPGameScoreboard(PvPGame game) {
         super(game);
     }
-
     public PvPGameScoreboard(BaseScoreboard scoreboard, PvPGame game) {
+        super(scoreboard, game);
+    }
+    public PvPGameScoreboard(BaseScoreboard scoreboard, LogFactoryGame game) {
         super(scoreboard, game);
     }
 
