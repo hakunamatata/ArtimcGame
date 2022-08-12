@@ -3,6 +3,8 @@ package plugin.artimc.engine;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import plugin.artimc.engine.timer.Manager;
+import plugin.artimc.engine.timer.TimerEvent;
+import plugin.artimc.engine.timer.TimerListener;
 
 /**
  * RunnableEngine
@@ -10,16 +12,14 @@ import plugin.artimc.engine.timer.Manager;
  * 作者：Leo
  * 创建时间：2022/08/07 22:34
  */
-public abstract class RunnableEngine extends BukkitRunnable implements AutoCloseable {
+public abstract class RunnableEngine extends BukkitRunnable implements TimerListener, AutoCloseable {
     Plugin plugin;
-
     private int currentTick = 0;
-
     private Manager timerManager;
 
     public RunnableEngine(Plugin plugin) {
         this.plugin = plugin;
-        timerManager = new Manager();
+        timerManager = new Manager(this);
     }
 
     public int getCurrentTick() {
@@ -54,6 +54,15 @@ public abstract class RunnableEngine extends BukkitRunnable implements AutoClose
             currentTick++;
         }
     }
+
+    @Override
+    public abstract void onTimerStart(TimerEvent event);
+
+    @Override
+    public abstract void onTimerTick(TimerEvent event);
+
+    @Override
+    public abstract void onTimerFinish(TimerEvent event);
 
     @Override
     public void close() throws Exception {

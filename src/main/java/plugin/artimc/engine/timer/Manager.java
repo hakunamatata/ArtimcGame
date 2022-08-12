@@ -1,5 +1,7 @@
 package plugin.artimc.engine.timer;
 
+import plugin.artimc.engine.RunnableEngine;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -11,20 +13,39 @@ import java.util.Map;
  */
 public class Manager {
 
+
+    private Map<String, Timer> timers;
+    private RunnableEngine runnableEngine;
+
+    public Manager(RunnableEngine runnableEngine) {
+        this.runnableEngine = runnableEngine;
+        this.timers = new HashMap();
+    }
+
     public Map<String, Timer> getTimers() {
         return timers;
     }
 
-    private Map<String, Timer> timers;
+    public void startTimer(Timer timer) {
+        timer.addEventListener(runnableEngine);
+        timers.put(timer.getName(), timer);
+        timer.start();
+    }
 
-    public Manager() {
-        timers = new HashMap();
+    public void stopTimer(Timer timer) {
+        if (timer != null) {
+            timer.finish();
+            timers.remove(timer.getName());
+        }
+    }
+
+    public void stopTimer(String timerName) {
+        stopTimer(timers.get(timerName));
     }
 
     public void tick() {
         for (Timer timer : timers.values()) {
-            if (timer.getState() != TimerState.FINISH)
-                timer.tick();
+            timer.tick();
         }
     }
 }

@@ -104,8 +104,7 @@ public class PvPItemControl {
         matMap.put("crafting_table", "工作台");
         matMap.put("工作台", "crafting_table");
 
-        matMap.put("tnt", "TNT");
-        matMap.put("TNT", "tnt");
+        matMap.put("tnt", "tnt");
 
         matMap.put("enchanted_golden_apple", "附魔金苹果");
         matMap.put("附魔金苹果", "enchanted_golden_apple");

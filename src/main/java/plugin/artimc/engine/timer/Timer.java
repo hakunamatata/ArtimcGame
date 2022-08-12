@@ -15,45 +15,48 @@ public abstract class Timer implements AutoCloseable {
     private String name;
     private int period;
     private int current;
-    private Manager manager;
-    private TimerState state;
-
     private TimerListener listener;
 
-    public Timer(String name, int period, Manager manager) {
+    public static String WAIT_TIMER = "GAME_ENGINE_IN_WAIT_PERIOD";
+    public static String GAME_TIMER = "GAME_ENGINE_IN_GAME_PERIOD";
+    public static String FINISH_TIMER = "GAME_ENGINE_IN_FINISH_PERIOD";
+
+    public Timer(String name, int period) {
         this.uuid = UUID.randomUUID();
         this.name = name;
         this.period = period;
         this.current = period;
-        this.manager = manager;
-        this.state = TimerState.CREATED;
     }
 
-    public void addTimerListener(TimerListener listener){
-        this.listener = listener;
+    public String getName() {
+        return name;
     }
 
-    public Timer(int period, Manager manager) {
+    public int getPeriod() {
+        return period;
+    }
+
+    public int getCurrent() {
+        return current;
+    }
+
+    public Timer(int period) {
         this.uuid = UUID.randomUUID();
         this.name = this.uuid.toString();
         this.period = period;
         this.current = period;
-        this.manager = manager;
-        this.state = TimerState.CREATED;
     }
 
-    public TimerState getState() {
-        return state;
+    public void addEventListener(TimerListener listener) {
+        this.listener = listener;
     }
-
 
     public void tick() {
         try {
             current--;
             update();
-            if (current <= 0 && state == TimerState.UPDATE) {
+            if (current <= 0) {
                 finish();
-                close();
             }
         } catch (Exception ex) {
             Bukkit.getServer().getLogger().warning(String.format("timer %s tick error: %s", name, ex.getMessage()));
@@ -62,34 +65,26 @@ public abstract class Timer implements AutoCloseable {
 
     /**
      * 计时器启动
-     * 向计时器管理器中添加自己
-     * tick 统一交由管理器处理
      */
-    public void start() {
-        manager.getTimers().put(name, this);
-        state = TimerState.START;
-        onStart();
+    protected void start() {
+        try {
+            listener.onTimerStart(new TimerEvent(this));
+        } catch (Exception ex) {
+            Bukkit.getServer().getLogger().warning(String.format("timer %s start error: %s", name, ex.getMessage()));
+        }
     }
 
-    protected abstract void onStart();
-
-    private void update() {
-        state = TimerState.UPDATE;
-        onUpdate();
+    protected void update() {
+        listener.onTimerStart(new TimerEvent(this));
     }
 
-    protected abstract void onUpdate();
-
-    private void finish() {
-        state = TimerState.FINISH;
-        onFinish();
-    }
-
-    /**
-     * 计时器时间到之后，将自己从管理器中移除
-     */
-    protected void onFinish() {
-        manager.getTimers().remove(name);
+    protected void finish() {
+        listener.onTimerStart(new TimerEvent(this));
+        try {
+            close();
+        } catch (Exception ex) {
+            Bukkit.getServer().getLogger().warning(String.format("timer %s finish error: %s", name, ex.getMessage()));
+        }
     }
 
     @Override

@@ -7,15 +7,12 @@ import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 
 import plugin.artimc.commands.executor.CommandExecutor;
-import plugin.artimc.commands.executor.admin.DefaultCommand;
-import plugin.artimc.commands.executor.admin.GamesCommand;
-import plugin.artimc.commands.executor.admin.PartyCommand;
-import plugin.artimc.commands.executor.admin.PlayerCommand;
+import plugin.artimc.commands.executor.admin.*;
 
 public class AdminCommandContext extends CommandContext {
 
     public AdminCommandContext(@NotNull CommandSender sender, @NotNull Command command, String label, String[] args,
-            Plugin plugin) {
+                               Plugin plugin) {
         super(sender, command, label, args, plugin);
     }
 
@@ -38,6 +35,9 @@ public class AdminCommandContext extends CommandContext {
 
         if (getArgs()[0].equals(this.getCommandCofniguration().getString("player")))
             return new PlayerCommand(this);
+
+        if (getArgs()[0].equals("test"))
+            return new TestCommand(this);
 
         return new DefaultCommand(this);
     }

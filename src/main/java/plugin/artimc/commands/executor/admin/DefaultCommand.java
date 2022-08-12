@@ -37,7 +37,8 @@ public class DefaultCommand extends CommandExecutor {
             return List.of(
                     getCommandString("player"),
                     getCommandString("games"),
-                    getCommandString("party"));
+                    getCommandString("party"),
+                    "test");
         return List.of();
     }
 
