@@ -5,7 +5,7 @@ active: false
 #最大队伍人数
 max-parties: 2
 #队伍中最大玩家数
-max-members: 5
+max-members: 1
 #指定这个游戏的世界名字
 #世界随着游戏创建而创建，随着游戏释放而重置
 world-name: "world"
@@ -35,6 +35,9 @@ period:
   finish: 60
 
 spawn:
+  protection:
+    range: 10;
+
   default:
     world: world
     x: 0

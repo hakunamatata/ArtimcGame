@@ -20,6 +20,7 @@ public class GameMap {
     private String description;
     private boolean active;
     private Map<String, Location> spawn;
+    private double spawnProtectionRange;
     private int maxParties = 2;
     private int maxMembers = 5;
     private String worldName = "";
@@ -37,7 +38,6 @@ public class GameMap {
     private String winSubTitle = "";
     private String looseTitle = "";
     private String looseSubTitle = "";
-
     private int invinciblePeriod = 5;
 
     public Plugin getPlugin() {
@@ -58,6 +58,10 @@ public class GameMap {
 
     public String getWorldName() {
         return worldName;
+    }
+
+    public double getSpawnProtectionRange() {
+        return spawnProtectionRange;
     }
 
     public String getSchemaFile() {
@@ -153,6 +157,7 @@ public class GameMap {
         spawn.put("default", getLocation(config.getConfigurationSection("spawn.default")));
         spawn.put("host", getLocation(config.getConfigurationSection("spawn.host")));
         spawn.put("guest", getLocation(config.getConfigurationSection("spawn.guest")));
+        spawnProtectionRange = config.getDouble("spawn.protection.range", 10);
         scoreboardTitle = ChatColor.translateAlternateColorCodes('&', config.getString("scoreboard.title", ""));
         startTitle = ChatColor.translateAlternateColorCodes('&', config.getString("titles.start.title", ""));
         startSubTitle = ChatColor.translateAlternateColorCodes('&', config.getString("titles.start.subtitle", ""));

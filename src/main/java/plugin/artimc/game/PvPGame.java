@@ -6,10 +6,14 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.boss.BarColor;
 import org.bukkit.entity.Player;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
@@ -31,8 +35,6 @@ public class PvPGame extends Game {
     private PartyName guestPartyName;
     private PvPStatstic pvpStatstic;
     private PvPItemControl pvpItemController;
-
-    private Set<UUID> moveRequest;
 
     public PvPGame(String pvpGameName, Plugin plugin) {
         super(pvpGameName, plugin);
@@ -72,16 +74,26 @@ public class PvPGame extends Game {
         if (party == null || party.contains(player))
             throw new IllegalStateException(getGameLocaleString("move-err-custom"));
 
-        Party playerParty = getManager().getPlayerParty(player);
+        final int maxMembers = getGameMap().getMaxMembers();
+        if (!getObserveParty().equals(party) && party.size() >= maxMembers)
+            throw new IllegalStateException(getGameLocaleString("party-members-overload").replace("%limit%", String.valueOf(maxMembers)));
 
+        Party playerParty = getManager().getPlayerParty(player);
         // 将玩家队伍设置为新的队伍
         // 更新玩家的计分板
         playerParty.removeSilent(player);
-        party.addSilent(player);
-        getManager().setPlayerParty(player, party);
-        // 更新双方队伍的计分板
+        // 如果将玩家移动到观察者队伍
+        if (getObserveParty().equals(party)) {
+            setPlayerAsObserver(player);
+        }
+        // 移动到非观察者队伍
+        else {
+            party.addSilent(player);
+            getManager().setPlayerParty(player, party);
+            playerParty.updateScoreboard();
+            resetPlayer(player);
+        }
         party.updateScoreboard();
-        playerParty.updateScoreboard();
         player.sendMessage(getGameLocaleString("move-success").replace("%party_name%", party.getName()));
     }
 
@@ -116,8 +128,8 @@ public class PvPGame extends Game {
         // 对方队伍成员均离线
         if (reason == GameFinishReason.MISSING_COMPANION) {
             Party party = null;
-            if (getHostParty().getOnlinePlayers().isEmpty()) party = getHostParty();
-            else if (getGuestParty().getOnlinePlayers().isEmpty()) party = getGuestParty();
+            if (getHostParty() != null && getHostParty().getOnlinePlayers().isEmpty()) party = getHostParty();
+            else if (getGuestParty() != null && getGuestParty().getOnlinePlayers().isEmpty()) party = getGuestParty();
             if (party != null)
                 sendMessage(getLocaleString("game.game-finish-reason-missing-companion", false).replace("%party_name%", party.getName()));
         }
@@ -248,6 +260,20 @@ public class PvPGame extends Game {
         super.onPartyJoinGame(party);
     }
 
+    /**
+     * 队伍离开
+     *
+     * @param party
+     */
+    @Override
+    protected void onPartyLeave(Party party) {
+        if (getGameParties().size() == 1) {
+            // 将当前仅剩的队伍设为主队
+            hostPartyName = ((Party) getGameParties().values().toArray()[0]).getPartyName();
+            guestPartyName = null;
+        }
+        super.onPartyLeave(party);
+    }
 
     @Override
     protected void onPlayerLeaveGame(Player player) {
@@ -308,7 +334,7 @@ public class PvPGame extends Game {
     @Override
     protected GameFinishReason willGameFinish() {
         // 如果游戏过程中，中途任意一支队伍玩家数量为 0 ，比赛终止
-        if (this.isGaming() && (getHostParty() == null || getHostParty().getOnlinePlayers().isEmpty() || getGuestParty() == null || getGuestParty().getOnlinePlayers().isEmpty())) {
+        if ((this.isGaming() || getGameStatus() == GameStatus.FINISH) && (getHostParty() == null || getHostParty().getOnlinePlayers().isEmpty() || getGuestParty() == null || getGuestParty().getOnlinePlayers().isEmpty())) {
             this.setFinishReason(GameFinishReason.MISSING_COMPANION);
         }
         return super.willGameFinish();
@@ -325,7 +351,7 @@ public class PvPGame extends Game {
             return false;
         } else {
             Party party = getManager().getPlayerParty(player);
-            if (party.contains(damager) && !isFriendlyFire()) {
+            if (party != null && party.contains(damager) && !isFriendlyFire()) {
                 // 同在一个队伍中, 且关闭了友方误伤
                 return false;
             }
@@ -364,6 +390,20 @@ public class PvPGame extends Game {
             getStatusBar().setTitle(getGameLocaleString("status-title-game-finsih", false));
             getStatusBar().setColor(BarColor.BLUE);
         }
+    }
+
+    @Override
+    public Party inSpawnProtection(Player player) {
+        double protRange = getGameMap().getSpawnProtectionRange();
+        if (getHostParty() != null && getGameMap().getSpawn().get("host").distance(player.getLocation()) < protRange) {
+            return getHostParty();
+        }
+
+        if (getGuestParty() != null && getGameMap().getSpawn().get("guest").distance(player.getLocation()) < protRange) {
+            return getGuestParty();
+        }
+
+        return super.inSpawnProtection(player);
     }
 
     /**
@@ -420,9 +460,18 @@ public class PvPGame extends Game {
 
     @Override
     public void onPlayerDamageByPlayer(Player player, Player damager, EntityDamageByEntityEvent eventSource) {
+
         if (pvpStatstic != null && isGaming()) {
             pvpStatstic.onAttack(getCurrentTick(), damager, player, eventSource.getDamage());
         }
+
+        Party inWitchSpawnParty = inSpawnProtection(player);
+        // 玩家在自己的出生点，攻击其他玩家，同样无视这种伤害
+        if (inWitchSpawnParty != null && inWitchSpawnParty.contains(damager)) {
+            damager.sendMessage(getGameLocaleString("too-near-to-spawn"));
+            eventSource.setCancelled(true);
+        }
+
         super.onPlayerDamageByPlayer(player, damager, eventSource);
     }
 
@@ -469,6 +518,47 @@ public class PvPGame extends Game {
             pvpItemController.recoverItemForPlayer(event.getPlayer());
         }
         super.onPlayerQuit(event);
+    }
+
+
+    @Override
+    public void onPlayerDamage(EntityDamageEvent event) {
+        // 玩家收到了伤害
+        if (event.getEntity() instanceof Player) {
+            Player player = (Player) event.getEntity();
+            Party inWitchSpawnParty = inSpawnProtection(player);
+            // 表示玩家在自己的出生点收到伤害，一律无视
+            if (inWitchSpawnParty != null && inWitchSpawnParty.contains(player)) {
+                event.setCancelled(true);
+            }
+        }
+        super.onPlayerDamage(event);
+    }
+
+    @Override
+    public void onBlockPlace(BlockPlaceEvent event) {
+        Player player = event.getPlayer();
+
+        Party inWitchSpawnParty = inSpawnProtection(player);
+        // 表示玩家在其他队伍的出生点附近 放置方块等
+        if (inWitchSpawnParty != null && !inWitchSpawnParty.contains(player)) {
+            player.sendMessage(getGameLocaleString("too-near-to-spawn"));
+            event.setCancelled(true);
+        }
+
+        super.onBlockPlace(event);
+    }
+
+    @Override
+    public void onPlayerBucketEmpty(PlayerBucketEmptyEvent event) {
+        Player player = event.getPlayer();
+        Party inWitchSpawnParty = inSpawnProtection(player);
+        // 表示玩家在其他队伍的出生点附近 放岩浆水桶等
+        if (inWitchSpawnParty != null && !inWitchSpawnParty.contains(player)) {
+            player.sendMessage(getGameLocaleString("too-near-to-spawn"));
+            event.setCancelled(true);
+        }
+        super.onPlayerBucketEmpty(event);
     }
 
 }

@@ -83,7 +83,7 @@ game:
   usage-rule: "&7使用方法 例如：/game 规则 物品 附魔金苹果 允许使用"
   observe-party-name: "观察者"
   game-parties-overload: "&7游戏中队伍数量已经到达限制 %limit%，如果你是一个人加入游戏，请先离开当前队伍"
-  party-members-overload: "&7你队伍的玩家数量超过限制 %limit%"
+  party-members-overload: "&7队伍玩家数量超过限制 %limit%"
   scoreboard-unsupport: "&7当前游戏不支持这种计分板"
   status-title-waiting-party: "&c&l等待玩家加入游戏..."
   status-title-waiting-ready: "&e&l等待队长准备就绪..."
@@ -128,3 +128,5 @@ game:
   move-err-game-is-running: "&7游戏已经开始，你无法移动队伍成员"
   move-err-custom: "&7你无法移动这个玩家"
   move-success: "&7你被移动到了 %party_name%"
+
+  too-near-to-spawn: "&7你离他的出生点太近了"

@@ -32,7 +32,7 @@ public final class ArtimcGamePlugin extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        // Plugin startup logic
+
         saveDefaultConfig();
         saveResource("games/test.yml", false);
         saveResource("language.yml", true);

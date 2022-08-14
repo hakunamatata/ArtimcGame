@@ -555,6 +555,7 @@ public class Party {
      */
     public void removeSilent(Player player) {
         players.remove(player.getUniqueId());
+        getScoreboard().remove(player.getUniqueId());
     }
 
     /**
@@ -564,6 +565,7 @@ public class Party {
      */
     public void addSilent(Player player) {
         players.add(player.getUniqueId());
+        getScoreboard().add(player.getUniqueId(), player.getName());
     }
 
     /**
@@ -640,9 +642,13 @@ public class Party {
     public void onPlayerQuit(Player player) {
         // 离线，将队长交给其他成员
         if (isOwner(player)) {
-            Player newOwner = Utils.getRandomElement(List.of(getOnlinePlayers().toArray(new Player[0])));
-            setOwner(newOwner);
-            sendMessage(Component.text(getLocaleString("command.player-promoted-as-owner").replace("%player_name%", newOwner.getName())));
+            for (Player p : getOnlinePlayers()) {
+                if (!player.equals(p)) {
+                    setOwner(p);
+                    sendMessage(Component.text(getLocaleString("command.player-promoted-as-owner").replace("%player_name%", p.getName())));
+                    break;
+                }
+            }
         }
         getManager().disablePartyChannel(player.getUniqueId());
         updateScoreboardOnPlayerEvent(player);

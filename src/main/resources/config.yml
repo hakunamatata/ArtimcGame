@@ -1,5 +1,20 @@
 debug: true
 
+# +-----------------------------------------------------------------------------------+ #
+#
+#                                     Storage Settings
+#
+# +-----------------------------------------------------------------------------------+ #
+# MySQL、H2
+storage-method: MySQL
+data:
+  host: 127.0.0.1
+  database: artimcgame
+  username: ''
+  password: ''
+  table-prefix: ''
+
+
 #队伍聊天频道设置
 chat:
   format: "&b[队伍] %player_name%: %message%"
@@ -78,6 +93,7 @@ params:
     party:
       host: 主队
       guest: 客队
+      observer: 观察者
     set:
       default-spawn: 默认出生点
       host-spawn: 主队出生点

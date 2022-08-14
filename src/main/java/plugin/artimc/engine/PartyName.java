@@ -1,6 +1,7 @@
 package plugin.artimc.engine;
 
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.ChatColor;
 
 public enum PartyName {
     /**
@@ -52,6 +53,28 @@ public enum PartyName {
                 return NamedTextColor.WHITE;
         }
     }
+
+    public ChatColor getChatColor() {
+        switch (this) {
+            case RED:
+                return ChatColor.RED;
+            case ORANGE:
+                return ChatColor.GOLD;
+            case YELLOW:
+                return ChatColor.YELLOW;
+            case GREEN:
+                return ChatColor.GREEN;
+            case LIME:
+                return ChatColor.AQUA;
+            case BLUE:
+                return ChatColor.BLUE;
+            case PURPLE:
+                return ChatColor.LIGHT_PURPLE;
+            default:
+                return ChatColor.WHITE;
+        }
+    }
+
 
     @Override
     public String toString() {

@@ -12,6 +12,16 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 
+/**
+ * 描述：PvPItemControl，物品控制
+ * 限制游戏过程中物品的使用，全物品控制
+ * 玩家自定义禁止某些物品的使用
+ * 被禁止的物品使用屏障方块替代
+ * 作者：Leo
+ * 创建时间：2022/7/29 20:40
+ * 更新时间：2022/8/15 09:10
+ */
+
 public class PvPItemControl {
     private PvPGame game;
     private Map<String, Boolean> banMaterials;

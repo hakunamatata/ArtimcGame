@@ -15,7 +15,7 @@ public class MoveCommand extends DefaultCommand {
 
     @Override
     public boolean execute() {
-        // game move #player #host/guest
+        // game move #player #host/guest/observer
 
         /**
          * Checkings
@@ -25,7 +25,7 @@ public class MoveCommand extends DefaultCommand {
         // 游戏内必须要队伍
         if (getParty() == null) throw new IllegalStateException(getLocaleString("command.ur-not-in-a-party"));
 
-        // 必须是队长才能准备
+        // 必须是队长才能移动
         if (!getParty().isOwner(getPlayer()))
             throw new IllegalStateException(getLocaleString("command.ur-not-party-owner"));
 
@@ -49,7 +49,7 @@ public class MoveCommand extends DefaultCommand {
 
             if (tryGetArg(2).equals(getParamsString("party.host"))) targetParty = game.getHostParty();
             else if (tryGetArg(2).equals(getParamsString("party.guest"))) targetParty = game.getGuestParty();
-
+            else if (tryGetArg(2).equals(getParamsString("party.observer"))) targetParty = game.getObserveParty();
             if (game.isGaming())
                 throw new IllegalStateException(getLocaleString("game.move-err-game-is-running"));
 
@@ -67,13 +67,16 @@ public class MoveCommand extends DefaultCommand {
 
     @Override
     public List<String> suggest() {
-        // game move #player #host/guest
+        // game move #player #host/guest/observer
         try {
             PvPGame game = (PvPGame) getGame();
             if (game.getHostParty() != null && game.getHostParty().isOwner(getPlayer())) {
 
                 if (!tryGetArg(1).isBlank()) {
-                    return List.of(getParamsString("party.host"), getParamsString("party.guest"));
+                    return List.of(
+                            getParamsString("party.host"),
+                            getParamsString("party.guest"),
+                            getParamsString("party.observer"));
                 }
 
                 if (!tryGetArg(0).isBlank()) {

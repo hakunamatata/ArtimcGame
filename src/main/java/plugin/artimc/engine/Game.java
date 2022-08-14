@@ -178,7 +178,7 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
         return new GameMap(agp.getGameConfigurations().get(gameName), plugin);
     }
 
-    protected Party getObserveParty() {
+    public Party getObserveParty() {
         return observeParty;
     }
 
@@ -334,13 +334,7 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
     private void playerJoinGame(Player player, Party party) {
         // 如果玩家的队伍时 观察者
         if (observeParty.equals(party)) {
-            observeParty.join(player);
-            // 游戏中添加玩家
-            add(player);
-            // 暂不处理
-            observeParty.sendMessage(getGameLocaleString("ob-join-player").replace("%player_name%", player.getName()));
-            player.teleport(getGameMap().getSpawn().get("default"));
-            onPlayerJoinGame(player, party, true);
+            addObserver(player);
         }
         // 玩家加入了现有的队伍
         else if (gameParties.values().contains(party)) {
@@ -368,6 +362,30 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
             party.sendMessage(getGameLocaleString("party-join-player").replace("%player_name%", player.getName()));
             onPlayerJoinGame(player, party, false);
         }
+    }
+
+    /**
+     * 主动添加观察者
+     *
+     * @param player
+     */
+    public void addObserver(Player player) {
+        observeParty.join(player);
+        // 游戏中添加玩家
+        add(player);
+        observeParty.sendMessage(getGameLocaleString("ob-join-player").replace("%player_name%", player.getName()));
+        player.teleport(getGameMap().getSpawn().get("default"));
+        onPlayerJoinGame(player, observeParty, true);
+    }
+
+    /**
+     * 将玩家设置为Observer
+     *
+     * @param player
+     */
+    public void setPlayerAsObserver(Player player) {
+        observeParty.sendMessage(getGameLocaleString("ob-join-player").replace("%player_name%", player.getName()));
+        player.setGameMode(GameMode.SPECTATOR);
     }
 
     /**
@@ -512,10 +530,14 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
         // 将游戏内队伍的计分板设置为游戏计分板
         try {
             Constructor<? extends GameScoreboard> ct = type.getDeclaredConstructor(BaseScoreboard.class, game);
+            GameScoreboard newScoreboard;
             for (Party party : gameParties.values()) {
-                GameScoreboard newScoreboard = ct.newInstance(party.getScoreboard(), this);
+                newScoreboard = ct.newInstance(party.getScoreboard(), this);
                 party.setScoreboard(newScoreboard);
             }
+            // 观察者队伍，使用游戏计分板
+            newScoreboard = ct.newInstance(observeParty.getScoreboard(), this);
+            observeParty.setScoreboard(newScoreboard);
         } catch (Exception ex) {
             sendMessage(getGameLocaleString("scoreboard-unsupport: ") + ex.getMessage());
         }
@@ -782,15 +804,20 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
             // 如果队伍中成员为空，将该队伍移除游戏
             if (party.getOnlinePlayers().isEmpty()) {
                 gameParties.remove(party.getPartyName());
+                onPartyLeave(party);
                 party.setGame(null);
                 party.setPartyName(null);
                 party.dismiss();
             }
         }
         log(String.format("玩家 %s 离开了游戏", player.getName()));
+        resetPlayer(player);
         onPlayerLeaveGame(player);
     }
 
+    protected void onPartyLeave(Party party) {
+
+    }
 
     public void closeGame() {
         if (timerManager.get(Game.FINISH_PERIOD_TIMER_NAME) != null)
@@ -831,6 +858,16 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
                 }
             }
         }
+        // ========= 观察者队伍 处理 =========
+
+        // 删除观察者队伍中的玩家
+        for (UUID player : observeParty.getPlayers()) {
+            observeParty.getScoreboard().remove(player);
+            OfflinePlayer offline = getPlugin().getServer().getOfflinePlayer(player);
+            resetPlayer((Player) offline);
+            observeParty.leave(offline);
+        }
+        // ========= 观察者队伍 处理 =========
         // 清理队伍
         gameParties.clear();
         // 清理玩家
@@ -885,8 +922,11 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
                 for (final Party party : gameParties.values()) {
                     party.updateScoreboard();
                 }
+                // 实时更新观察者队伍计分板
+                observeParty.updateScoreboard();
                 // 每秒钟运行
                 onFixedUpdate();
+                fixObserver();
             }
             // 强制停止游戏
             if (!isClosing && willForceCloseGame()) {
@@ -895,6 +935,7 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
         }
         // 不能让异常中断游戏
         catch (Exception ex) {
+//            throw ex;
             getPlugin().getServer().getLogger().warning("onTick Exception: " + ex.getMessage());
         }
         // 无论如何，游戏时间刻都在增加
@@ -902,7 +943,14 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
             // 时刻都在运行
             currentTick++;
         }
+    }
 
+    private void fixObserver() {
+        for (Player player : observeParty.getOnlinePlayers()) {
+            if (player.getGameMode() != GameMode.SPECTATOR) {
+                player.setGameMode(GameMode.SPECTATOR);
+            }
+        }
     }
 
     /**
@@ -931,7 +979,7 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
         }
     }
 
-    private void resetPlayer(Player player) {
+    protected void resetPlayer(Player player) {
         player.setGameMode(GameMode.SURVIVAL);
         player.setGlowing(false);
         player.setHealthScaled(false);
@@ -948,7 +996,12 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
      * @return
      */
     protected boolean willForceCloseGame() {
-        return currentTick > 5 * 20 && getOnlinePlayers().isEmpty();
+        boolean isPartyEmpty = true;
+        // Ob 不算 玩家
+        for (Party party : gameParties.values()) {
+            isPartyEmpty &= party.size() == 0;
+        }
+        return currentTick > 5 * 20 && isPartyEmpty;
     }
 
     /**
@@ -993,6 +1046,16 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
                 ((Player) player).sendMessage(message);
             }
         }
+    }
+
+    /**
+     * 玩家是否在出生点保护的范围里
+     *
+     * @param player
+     * @return 返回 所在出生点的所属的队伍
+     */
+    public Party inSpawnProtection(Player player) {
+        return null;
     }
 
     /**
@@ -1134,7 +1197,8 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
     /**
      * This will be called when a player in this game takes damage by another player
      */
-    public void onPlayerDamageByPlayer(final Player player, final Player damager, final EntityDamageByEntityEvent eventSource) {
+    public void onPlayerDamageByPlayer(final Player player, final Player damager,
+                                       final EntityDamageByEntityEvent eventSource) {
 
     }
 

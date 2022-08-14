@@ -11,6 +11,7 @@ import org.bukkit.entity.Player;
 
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
+import org.jetbrains.annotations.NotNull;
 import plugin.artimc.engine.GameStatus;
 import plugin.artimc.engine.Party;
 import plugin.artimc.instance.LogFactoryGame;
@@ -22,9 +23,11 @@ public class PvPGameScoreboard extends GameScoreboard {
     public PvPGameScoreboard(PvPGame game) {
         super(game);
     }
+
     public PvPGameScoreboard(BaseScoreboard scoreboard, PvPGame game) {
         super(scoreboard, game);
     }
+
     public PvPGameScoreboard(BaseScoreboard scoreboard, LogFactoryGame game) {
         super(scoreboard, game);
     }
@@ -47,36 +50,66 @@ public class PvPGameScoreboard extends GameScoreboard {
         return ">10w ";
     }
 
-    private String displayPlayerName(Player player) {
+    private boolean playerInHost(Player player) {
+        Party party = getGame().getHostParty();
+        return party != null && party.contains(player);
+    }
 
+    private boolean playerInGuest(Player player) {
+        Party party = getGame().getGuestParty();
+        return party != null && party.contains(player);
+    }
+
+    private String displayPlayerName(Player player) {
         String color = "&f";
-        if (getGame().getHostParty().contains(player) && getGame().getHostParty().getPartyName() != null) {
-            color = getGame().getHostParty().getPartyName().toString();
-        } else if (getGame().getGuestParty().contains(player) && getGame().getGuestParty().getPartyName() != null) {
-            color = getGame().getGuestParty().getPartyName().toString();
-        }
-        if (getGame().getGameStatus() == GameStatus.WAITING) {
-            if (getGame().getHostParty().contains(player.getUniqueId())) {
-                if (getGame().getHostParty().isOwner(player)) {
+        Party party;
+        // 玩家在主队
+        if (playerInHost(player)) {
+            party = getGame().getHostParty();
+            // 游戏等待中....
+            if (getGame().getGameStatus() == GameStatus.WAITING) {
+                // 主队队长
+                if (party.isOwner(player)) {
                     color = getGame().isHostReady() ? "&a✔★ " : "&e★  ";
-                } else {
+                }
+                // 主队成员
+                else {
                     color = getGame().isHostReady() ? "&a●  " : "&e●  ";
                 }
-            } else if (getGame().getGuestParty().contains(player.getUniqueId())) {
-                if (getGame().getGuestParty().isOwner(player)) {
+            }
+            // 游戏其他状态
+            else {
+                // 名字颜色使用 队伍颜色
+                color = party.getPartyName().toString();
+            }
+
+        } else if (playerInGuest(player)) {
+            party = getGame().getGuestParty();
+            // 游戏等待中....
+            if (getGame().getGameStatus() == GameStatus.WAITING) {
+                // 客队队长
+                if (party.isOwner(player)) {
                     color = getGame().isGuestReady() ? "&a✔★ " : "&e★  ";
-                } else {
+                }
+                // 主队成员
+                else {
                     color = getGame().isGuestReady() ? "&a●  " : "&e●  ";
                 }
             }
+            // 游戏其他状态
+            else {
+                // 名字颜色使用 队伍颜色
+                color = party.getPartyName().toString();
+            }
         }
+
         String name = player.getName();
         if (name.length() > 10) name = name.substring(0, 8);
 
         return color + name + " ".repeat(10 - name.length());
     }
 
-    private String writePlayerData(Player player) {
+    private @NotNull String writePlayerData(Player player) {
         String temp = "  %player_name%  &6%damages%  &a%kill%   &e%assist%   &c%dead% ";
         return ChatColor.translateAlternateColorCodes('&', temp.replace("%player_name%", displayPlayerName(player)).replace("%damages%", displayDouble(getGame().getPvPStatstic() == null ? 0 : getGame().getPvPStatstic().getPlayerCausedDamage(player))).replace("%kill%", displayNumber(getGame().getPvPStatstic() == null ? 0 : getGame().getPvPStatstic().getPlayerKills(player))).replace("%assist%", displayNumber(getGame().getPvPStatstic() == null ? 0 : getGame().getPvPStatstic().getPlayerAssits(player))).replace("%dead%", displayNumber(getGame().getPvPStatstic() == null ? 0 : getGame().getPvPStatstic().getPlayerDeathes(player))));
 
@@ -99,18 +132,35 @@ public class PvPGameScoreboard extends GameScoreboard {
 
     @Override
     protected List<String> getLines() {
+        List<String> list = new ArrayList<>();
         String hostPartyName = "主队 %party_custom_name%:";
         String guestPartynString = "客队 %party_custom_name%:";
-        List<String> list = new ArrayList<>();
+        Party hostParty = getGame().getHostParty();
+        Party guestParty = getGame().getGuestParty();
+
+        if (hostParty != null) {
+            list.add(" ");
+            list.add(ChatColor.translateAlternateColorCodes('&', "             &6伤害  &a击杀  &e助攻  &4死亡    "));
+            list.add(hostParty.getPartyName().toString() + hostPartyName.replace("%party_custom_name%", hostParty.getName()));
+            list.addAll(getPartyMemberStatus(hostParty));
+        }
+
         list.add(" ");
-        list.add(ChatColor.translateAlternateColorCodes('&', "             &6伤害  &a击杀  &e助攻  &4死亡    "));
-        list.add(getGame().getHostParty().getPartyName().toString() + hostPartyName.replace("%party_custom_name%", getGame().getHostParty().getName()));
-        list.addAll(getPartyMemberStatus(getGame().getHostParty()));
-        list.add(" ");
-        if (getGame().getGuestParty() != null) {
+
+        if (guestParty != null) {
             list.add(ChatColor.translateAlternateColorCodes('&', "                     &f&lVS    "));
-            list.add(getGame().getGuestParty().getPartyName().toString() + guestPartynString.replace("%party_custom_name%", getGame().getGuestParty().getName()));
-            list.addAll(getPartyMemberStatus(getGame().getGuestParty()));
+            list.add(guestParty.getPartyName().toString() + guestPartynString.replace("%party_custom_name%", guestParty.getName()));
+            list.addAll(getPartyMemberStatus(guestParty));
+        }
+
+        // 如果有OB，显示OB名字
+        if (getGame().getObserveParty().size() > 0) {
+            list.add(" ");
+            list.add(ChatColor.GRAY + "观察者：");
+            String obNames = ChatColor.GRAY + "";
+            for (Player player : getGame().getObserveParty().getOnlinePlayers())
+                obNames += player.getName() + "; ";
+            list.add(obNames);
         }
 
         list.add(ChatColor.translateAlternateColorCodes('&', " "));
@@ -126,6 +176,8 @@ public class PvPGameScoreboard extends GameScoreboard {
             if (hostParty != null && guestparty != null) {
                 Team host = (sb.getTeam(hostParty.getPartyName().toString()) == null) ? sb.registerNewTeam(hostParty.getPartyName().toString()) : sb.getTeam(hostParty.getPartyName().toString());
                 Team guest = (sb.getTeam(guestparty.getPartyName().toString()) == null) ? sb.registerNewTeam(guestparty.getPartyName().toString()) : sb.getTeam(guestparty.getPartyName().toString());
+                host.setColor(hostParty.getPartyName().getChatColor());
+                guest.setColor(guestparty.getPartyName().getChatColor());
                 for (Player ePlayer : game.getOnlinePlayers()) {
                     if (!(host.hasPlayer(ePlayer)) && (hostParty.contains(ePlayer.getUniqueId()))) {
                         host.addPlayer(ePlayer);
