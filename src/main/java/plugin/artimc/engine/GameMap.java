@@ -3,6 +3,7 @@ package plugin.artimc.engine;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -59,6 +60,11 @@ public class GameMap {
     public String getWorldName() {
         return worldName;
     }
+
+    public World getWorld() {
+        return Bukkit.getWorld(getWorldName());
+    }
+
 
     public double getSpawnProtectionRange() {
         return spawnProtectionRange;

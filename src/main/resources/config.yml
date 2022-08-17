@@ -32,6 +32,8 @@ settings:
   max-player: 5
   #队伍最多可以合并的退伍数量
   max-join: 4
+  #捡起物品的距离
+  pickup-distance: 2
 
 #游戏大厅
 lobby:
@@ -81,6 +83,7 @@ commands:
     save: 保存
     reload: 重载
     leave: 离开
+    inventory: 物品栏
 
 #party指令参数本地化设置
 params:
@@ -102,6 +105,13 @@ params:
       wait-period: 等待时间
       game-period: 游戏时间
       finish-period: 结算时间
+
+      # 物品栏使用策略
+      inventory: 物品栏
+
+    inventory:
+      save: 保存
+      recover: 恢复
     rule:
       name: 规则
 

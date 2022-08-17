@@ -16,7 +16,6 @@ import plugin.artimc.ArtimcGameManager;
 import plugin.artimc.ArtimcGamePlugin;
 import plugin.artimc.scoreboard.BaseScoreboard;
 import plugin.artimc.scoreboard.PartyScoreboard;
-import plugin.artimc.utils.Utils;
 
 /**
  * 描述：BaseParty，队伍管理器

@@ -2,11 +2,8 @@ package plugin.artimc.game;
 
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 
 import org.bukkit.GameMode;
-import org.bukkit.Location;
 import org.bukkit.boss.BarColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockPlaceEvent;
@@ -21,6 +18,8 @@ import org.bukkit.plugin.Plugin;
 
 import org.jetbrains.annotations.NotNull;
 import plugin.artimc.engine.*;
+import plugin.artimc.engine.event.GameItemPickupEvent;
+import plugin.artimc.engine.item.GameItem;
 import plugin.artimc.scoreboard.GameScoreboard;
 import plugin.artimc.utils.StringUtil;
 
@@ -334,9 +333,11 @@ public class PvPGame extends Game {
     @Override
     protected GameFinishReason willGameFinish() {
         // 如果游戏过程中，中途任意一支队伍玩家数量为 0 ，比赛终止
-        if ((this.isGaming() || getGameStatus() == GameStatus.FINISH) && (getHostParty() == null || getHostParty().getOnlinePlayers().isEmpty() || getGuestParty() == null || getGuestParty().getOnlinePlayers().isEmpty())) {
+        if ((this.isGaming() || getGameStatus() == GameStatus.FINISH)
+                && (getHostParty() == null || getHostParty().getOnlinePlayers().isEmpty() || getGuestParty() == null || getGuestParty().getOnlinePlayers().isEmpty())) {
             this.setFinishReason(GameFinishReason.MISSING_COMPANION);
         }
+
         return super.willGameFinish();
     }
 
@@ -395,12 +396,17 @@ public class PvPGame extends Game {
     @Override
     public Party inSpawnProtection(Player player) {
         double protRange = getGameMap().getSpawnProtectionRange();
-        if (getHostParty() != null && getGameMap().getSpawn().get("host").distance(player.getLocation()) < protRange) {
-            return getHostParty();
-        }
 
-        if (getGuestParty() != null && getGameMap().getSpawn().get("guest").distance(player.getLocation()) < protRange) {
-            return getGuestParty();
+        try {
+            if (getHostParty() != null && getGameMap().getSpawn().get("host").distance(player.getLocation()) < protRange) {
+                return getHostParty();
+            }
+
+            if (getGuestParty() != null && getGameMap().getSpawn().get("guest").distance(player.getLocation()) < protRange) {
+                return getGuestParty();
+            }
+        } catch (Exception ex) {
+
         }
 
         return super.inSpawnProtection(player);
@@ -419,12 +425,9 @@ public class PvPGame extends Game {
         new GameBuffEffect("respawn-invincible", player, period, this) {
             @Override
             protected void onFinish() {
-                // onFinish 似乎不是每次都执行
+                // onFinish
                 getGame().setPlayerInvincible(getPlayer(), false);
                 getPlayer().setGlowing(false);
-                //MiniGameUtils.clearPotionEffects(player);
-                //player.addPotionEffect(new PotionEffect(PotionEffectType.HEALTH_BOOST, getPeriod() * 20, 255,
-                //true, false, false));
                 log(String.format("%s 被解除了 无敌 效果", player.getName(), getPeriod()));
                 super.onFinish();
             }
@@ -461,15 +464,13 @@ public class PvPGame extends Game {
     @Override
     public void onPlayerDamageByPlayer(Player player, Player damager, EntityDamageByEntityEvent eventSource) {
 
-        if (pvpStatstic != null && isGaming()) {
-            pvpStatstic.onAttack(getCurrentTick(), damager, player, eventSource.getDamage());
-        }
-
-        Party inWitchSpawnParty = inSpawnProtection(player);
+        Party inWitchSpawnParty = inSpawnProtection(damager);
         // 玩家在自己的出生点，攻击其他玩家，同样无视这种伤害
         if (inWitchSpawnParty != null && inWitchSpawnParty.contains(damager)) {
             damager.sendMessage(getGameLocaleString("too-near-to-spawn"));
             eventSource.setCancelled(true);
+        } else if (pvpStatstic != null && isGaming()) {
+            pvpStatstic.onAttack(getCurrentTick(), damager, player, eventSource.getDamage());
         }
 
         super.onPlayerDamageByPlayer(player, damager, eventSource);
@@ -561,4 +562,8 @@ public class PvPGame extends Game {
         super.onPlayerBucketEmpty(event);
     }
 
+    @Override
+    public void onGameItemPickup(GameItemPickupEvent event) {
+        super.onGameItemPickup(event);
+    }
 }

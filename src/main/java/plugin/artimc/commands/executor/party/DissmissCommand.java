@@ -3,6 +3,7 @@ package plugin.artimc.commands.executor.party;
 import java.util.List;
 import java.util.UUID;
 
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
 import net.kyori.adventure.text.Component;
@@ -20,19 +21,17 @@ public class DissmissCommand extends DefaultCommand {
         Player player = getPlayer();
         Party party = getParty();
 
-        if (party == null)
-            throw new IllegalStateException(getLocaleString("command.ur-not-in-a-party"));
+        if (party == null) throw new IllegalStateException(getLocaleString("command.ur-not-in-a-party"));
 
-        if (!party.isOwner(player))
-            throw new IllegalStateException(getLocaleString("command.ur-not-party-owner"));
+        if (!party.isOwner(player)) throw new IllegalStateException(getLocaleString("command.ur-not-party-owner"));
 
         Object[] uuids = party.getPlayers().toArray().clone();
         for (int i = 0; i < uuids.length; i++) {
             UUID uuid = (UUID) uuids[i];
-            Player removee = getPlugin().getServer().getPlayer(uuid);
+            OfflinePlayer removee = getPlugin().getServer().getOfflinePlayer(uuid);
             if (party.leave(removee)) {
-                removee.sendMessage(Component.text(getLocaleString("command.party-dismissed")
-                        .replace("%player_name%", player.getName())));
+                if (removee.isOnline())
+                    ((Player) removee).sendMessage(Component.text(getLocaleString("command.party-dismissed").replace("%player_name%", player.getName())));
             }
         }
 

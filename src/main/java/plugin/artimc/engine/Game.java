@@ -9,10 +9,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.GameMode;
-import org.bukkit.OfflinePlayer;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
@@ -22,11 +19,15 @@ import org.bukkit.entity.Projectile;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.player.*;
 import org.bukkit.event.block.*;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.potion.PotionEffect;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import plugin.artimc.ArtimcGameManager;
 import plugin.artimc.ArtimcGamePlugin;
+import plugin.artimc.engine.event.GameItemPickupEvent;
+import plugin.artimc.engine.item.GameItem;
 import plugin.artimc.scoreboard.BaseScoreboard;
 import plugin.artimc.scoreboard.GameScoreboard;
 import plugin.artimc.scoreboard.PartyScoreboard;
@@ -38,7 +39,7 @@ import plugin.artimc.scoreboard.PartyScoreboard;
  * 作者：Leo
  * 创建时间：2022/7/29 20:40
  */
-public abstract class Game extends BukkitRunnable implements AutoCloseable {
+public abstract class Game extends BukkitRunnable implements IGameListener, AutoCloseable {
     public static final String WAIT_PERIOD_TIMER_NAME = "WAITING_PERIOD_TIMER";
     public static final String GAME_PERIOD_TIMER_NAME = "GAMING_PERIOD_TIMER";
     public static final String FINISH_PERIOD_TIMER_NAME = "FINISH_PERIOD_TIMER";
@@ -66,6 +67,7 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
     // 玩家的Buff效果
     private final Set<UUID> invinciblePlayers;
 
+    private Set<GameItem> gameItems;
 
     protected Game(final String gameName, final Plugin plugin) {
         this.gameName = gameName;
@@ -79,6 +81,7 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
         winners = new HashSet<>();
         losers = new HashSet<>();
         invinciblePlayers = new HashSet<>();
+        gameItems = new HashSet<>();
         // 组件初始化
         onInitialization();
         world = new GameWorld(this);
@@ -501,7 +504,23 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
      * 已经完成了初始化、时间刻已经开始启动
      */
     protected void onGameCreate() {
-
+        World gameWorld = getPlugin().getServer().getWorld(getGameMap().getWorldName());
+        // 隐藏成就
+        gameWorld.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
+        // 死亡不掉落
+        gameWorld.setGameRule(GameRule.KEEP_INVENTORY, true);
+        // 关闭袭击
+        gameWorld.setGameRule(GameRule.DISABLE_RAIDS, true);
+        // 关闭日月交替
+        gameWorld.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
+        // 关闭生物生成
+        gameWorld.setGameRule(GameRule.DO_MOB_SPAWNING, false);
+        // 关闭天气
+        gameWorld.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
+        // 观察者不生成区块
+        gameWorld.setGameRule(GameRule.SPECTATORS_GENERATE_CHUNKS, false);
+        // 永远白天
+        gameWorld.setTime(6000);
     }
 
     /**
@@ -550,6 +569,7 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
         gameStartAt = getCurrentTick();
         // 修改队伍的计分板
         changeGameScoreboard(useScoreboard(), this.getClass());
+
         /**
          * 游戏开始计时器
          */
@@ -682,6 +702,16 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
         return getManager().getOnlinePlayers(players);
     }
 
+    public Set<Player> getOnlinePlayersExceptObserver() {
+        Set<Player> players = new HashSet<>();
+        for (Party party : gameParties.values()) {
+            for (Player player : party.getOnlinePlayers()) {
+                players.add(player);
+            }
+        }
+        return players;
+    }
+
     /**
      * 将玩家加入当前游戏
      *
@@ -785,6 +815,13 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
 
     }
 
+    public GameItem dropItem(ItemStack item, Location location) {
+        GameItem gameItem = new GameItem(item, this);
+        gameItem.drop(location);
+        gameItems.add(gameItem);
+        return gameItem;
+    }
+
     /**
      * 玩家离开游戏
      *
@@ -866,6 +903,7 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
             OfflinePlayer offline = getPlugin().getServer().getOfflinePlayer(player);
             resetPlayer((Player) offline);
             observeParty.leave(offline);
+            leaveGame(((Player) offline));
         }
         // ========= 观察者队伍 处理 =========
         // 清理队伍
@@ -878,7 +916,6 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
         playerPlacedBlocks.clear();
         // 游戏结束重置地形
         world.reset();
-        log(String.format("地形已重置"));
         onGameClose();
         close();
     }
@@ -981,6 +1018,9 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
 
     protected void resetPlayer(Player player) {
         player.setGameMode(GameMode.SURVIVAL);
+        // 移除所有药水效果
+        for (PotionEffect pe : player.getActivePotionEffects())
+            player.removePotionEffect(pe.getType());
         player.setGlowing(false);
         player.setHealthScaled(false);
         player.setHealth(player.getMaxHealth());
@@ -999,7 +1039,7 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
         boolean isPartyEmpty = true;
         // Ob 不算 玩家
         for (Party party : gameParties.values()) {
-            isPartyEmpty &= party.size() == 0;
+            isPartyEmpty &= party.getOnlinePlayers().size() == 0;
         }
         return currentTick > 5 * 20 && isPartyEmpty;
     }
@@ -1321,5 +1361,13 @@ public abstract class Game extends BukkitRunnable implements AutoCloseable {
      */
     public void onPlayerRespawn(final PlayerRespawnEvent event) {
 
+    }
+
+    @Override
+    public void onGameItemPickup(GameItemPickupEvent event) {
+        if (!event.isCancel()) {
+            event.getItem().pickUp(event.getPlayer());
+            gameItems.remove(event.getItem());
+        }
     }
 }

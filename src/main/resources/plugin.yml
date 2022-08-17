@@ -7,6 +7,7 @@ softdepend:
   - PlaceholderAPI
   - Multiverse-Core
   - FastAsyncWorldEdit
+  - HolographicDisplays
 permissions:
   artimc.place.barrier:
     description: 是否允许防止屏障方块
@@ -19,10 +20,10 @@ permissions:
     default: false
 commands:
   party:
-    aliases: [队伍]
+    aliases: [ 队伍 ]
   game:
-    aliases: [游戏]
+    aliases: [ 游戏 ]
   partymessage:
-    aliases: [pm]
+    aliases: [ pm ]
   artimcadmin:
-    aliases: [aa]
+    aliases: [ aa ]

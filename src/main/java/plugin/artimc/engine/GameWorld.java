@@ -1,5 +1,7 @@
 package plugin.artimc.engine;
 
+import com.gmail.filoghost.holographicdisplays.api.Hologram;
+import com.gmail.filoghost.holographicdisplays.api.HologramsAPI;
 import com.onarandombox.MultiverseCore.MultiverseCore;
 import com.onarandombox.MultiverseCore.api.MVWorldManager;
 import com.sk89q.worldedit.EditSession;
@@ -10,6 +12,7 @@ import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.transform.Transform;
 import org.bukkit.Bukkit;
+import org.bukkit.GameRule;
 import org.bukkit.World;
 import org.bukkit.WorldType;
 
@@ -55,12 +58,14 @@ public class GameWorld {
         this.worldManager.removePlayersFromWorld(worldName);
         // 重新生成世界
         this.worldManager.regenWorld(worldName, false, false, null, true);
+
         // 将地形复制过来，异步执行
         Bukkit.getScheduler().runTaskAsynchronously(game.getPlugin(), new Runnable() {
             @Override
             public void run() {
                 try {
                     ClipboardFormats.findByFile(schema).load(schema).paste(createWorldIfAbsent(), BlockVector3.at(0, height, 0), false, false, (Transform) null);
+                    game.log(String.format("地形已重置"));
                     // 需要添加时间通知
                     // 仍有多次导入地形的情况发生
                 } catch (Exception ex) {
@@ -82,6 +87,10 @@ public class GameWorld {
         if (existWorld == null) {
             this.worldManager.addWorld(worldName, env, null, WorldType.NORMAL, false, "VoidGen");
             existWorld = Bukkit.getWorld(worldName);
+        }
+        for (Hologram holo : HologramsAPI.getHolograms(game.getPlugin())) {
+            if (holo.getWorld().equals(existWorld))
+                holo.delete();
         }
         return new BukkitWorld(existWorld);
     }

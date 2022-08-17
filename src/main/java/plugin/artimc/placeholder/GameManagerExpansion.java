@@ -41,6 +41,7 @@ public class GameManagerExpansion extends PlaceholderExpansion {
 
     /**
      * Placeholder 请求格式
+     * %atg_desc_<游戏名称>% ：表示游戏的描述
      * %atg_onlines_<游戏名称>% ：表示游戏的在线人数
      * %atg_status_<游戏名称>% ：表示游戏的状态：等待中、进行中、已结束、已关闭
      * %atg_timeleft_<游戏名称>% ：表示游戏当前状态的剩余时间
@@ -53,12 +54,20 @@ public class GameManagerExpansion extends PlaceholderExpansion {
     @Override
     public @Nullable String onPlaceholderRequest(Player player, @NotNull String params) {
 
+        if (params.startsWith("desc_")) {
+            String gameName = params.replace("desc_", "");
+            Game game = plugin.getManager().getGame(gameName);
+            if (game != null) {
+                return game.getGameMap().getDescription();
+            }
+            return "";
+        }
+
         // 返回指定游戏内的在线玩家数
         if (params.startsWith("onlines_")) {
             String gameName = params.replace("onlines_", "");
             Game game = plugin.getManager().getGame(gameName);
-            if (game != null)
-                return String.valueOf(game.getOnlinePlayers().size());
+            if (game != null) return String.valueOf(game.getOnlinePlayers().size());
             return String.valueOf(0);
         }
 
@@ -78,6 +87,7 @@ public class GameManagerExpansion extends PlaceholderExpansion {
                         break;
                     case FINISH:
                         status = "&9结算中";
+                        break;
                     default:
                         status = "&7已关闭";
                 }
@@ -102,8 +112,7 @@ public class GameManagerExpansion extends PlaceholderExpansion {
                     timer = game.getTimerManager().get(Game.FINISH_PERIOD_TIMER_NAME);
                     break;
             }
-            if (timer != null)
-                return StringUtil.formatTime(timer.getCurrent());
+            if (timer != null) return StringUtil.formatTime(timer.getCurrent());
         }
 
         // 获取游戏中的在线玩家名称
@@ -114,8 +123,7 @@ public class GameManagerExpansion extends PlaceholderExpansion {
             if (game == null) return "";
             for (Party party : game.getGameParties().values()) {
                 String partyColor = ChatColor.WHITE + "";
-                if (party != null && party.getPartyName() != null)
-                    partyColor = party.getPartyName().toString();
+                if (party != null && party.getPartyName() != null) partyColor = party.getPartyName().toString();
                 for (Player pp : party.getOnlinePlayers()) {
                     playerNames += partyColor + pp.getName() + ";";
                 }

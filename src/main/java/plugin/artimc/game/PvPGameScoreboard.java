@@ -2,11 +2,8 @@ package plugin.artimc.game;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.ChatColor;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
 import org.bukkit.scoreboard.Scoreboard;
@@ -74,7 +71,7 @@ public class PvPGameScoreboard extends GameScoreboard {
                 }
                 // 主队成员
                 else {
-                    color = getGame().isHostReady() ? "&a●  " : "&e●  ";
+                    color = getGame().isHostReady() ? "&a  " : "&e  ";
                 }
             }
             // 游戏其他状态
@@ -93,7 +90,7 @@ public class PvPGameScoreboard extends GameScoreboard {
                 }
                 // 主队成员
                 else {
-                    color = getGame().isGuestReady() ? "&a●  " : "&e●  ";
+                    color = getGame().isGuestReady() ? "&a  " : "&e  ";
                 }
             }
             // 游戏其他状态
@@ -111,7 +108,7 @@ public class PvPGameScoreboard extends GameScoreboard {
 
     private @NotNull String writePlayerData(Player player) {
         String temp = "  %player_name%  &6%damages%  &a%kill%   &e%assist%   &c%dead% ";
-        return ChatColor.translateAlternateColorCodes('&', temp.replace("%player_name%", displayPlayerName(player)).replace("%damages%", displayDouble(getGame().getPvPStatstic() == null ? 0 : getGame().getPvPStatstic().getPlayerCausedDamage(player))).replace("%kill%", displayNumber(getGame().getPvPStatstic() == null ? 0 : getGame().getPvPStatstic().getPlayerKills(player))).replace("%assist%", displayNumber(getGame().getPvPStatstic() == null ? 0 : getGame().getPvPStatstic().getPlayerAssits(player))).replace("%dead%", displayNumber(getGame().getPvPStatstic() == null ? 0 : getGame().getPvPStatstic().getPlayerDeathes(player))));
+        return ChatColor.translateAlternateColorCodes('&', temp.replace("%player_name%", displayPlayerName(player)).replace("%damages%", displayDouble(getGame().getPvPStatstic() == null ? 0 : getGame().getPvPStatstic().getPlayerCausedDamage(player))).replace("%kill%", displayNumber(getGame().getPvPStatstic() == null ? 0 : getGame().getPvPStatstic().getPlayerKills(player))).replace("%assist%", displayNumber(getGame().getPvPStatstic() == null ? 0 : getGame().getPvPStatstic().getPlayerAssits(player))).replace("%dead%", displayNumber(getGame().getPvPStatstic() == null ? 0 : getGame().getPvPStatstic().getPlayerDeaths(player))));
 
     }
 
@@ -133,8 +130,8 @@ public class PvPGameScoreboard extends GameScoreboard {
     @Override
     protected List<String> getLines() {
         List<String> list = new ArrayList<>();
-        String hostPartyName = "主队 %party_custom_name%:";
-        String guestPartynString = "客队 %party_custom_name%:";
+        String hostPartyName = "主队: %party_custom_name%";
+        String guestPartyString = "客队: %party_custom_name%";
         Party hostParty = getGame().getHostParty();
         Party guestParty = getGame().getGuestParty();
 
@@ -148,8 +145,12 @@ public class PvPGameScoreboard extends GameScoreboard {
         list.add(" ");
 
         if (guestParty != null) {
-            list.add(ChatColor.translateAlternateColorCodes('&', "                     &f&lVS    "));
-            list.add(guestParty.getPartyName().toString() + guestPartynString.replace("%party_custom_name%", guestParty.getName()));
+            String hostPerf = displayDouble(0.00);
+            if (hostParty != null)
+                hostPerf = hostParty.getPartyName().getChatColor() + displayDouble(getGame().getPvPStatstic().getPartyPerformance(hostParty));
+            String guestPerf = guestParty.getPartyName().getChatColor() + displayDouble(getGame().getPvPStatstic().getPartyPerformance(guestParty));
+            list.add(ChatColor.translateAlternateColorCodes('&', "             &l%hostPerf%  &f&lVS  &l%guestPerf%  ").replace("%hostPerf%", hostPerf).replace("%guestPerf%", guestPerf));
+            list.add(guestParty.getPartyName().toString() + guestPartyString.replace("%party_custom_name%", guestParty.getName()));
             list.addAll(getPartyMemberStatus(guestParty));
         }
 
@@ -172,20 +173,20 @@ public class PvPGameScoreboard extends GameScoreboard {
         for (Player selectPlayer : game.getOnlinePlayers()) {
             Scoreboard sb = selectPlayer.getScoreboard();
             Party hostParty = getGame().getHostParty();
-            Party guestparty = getGame().getGuestParty();
-            if (hostParty != null && guestparty != null) {
+            Party guestParty = getGame().getGuestParty();
+            if (hostParty != null && guestParty != null) {
                 Team host = (sb.getTeam(hostParty.getPartyName().toString()) == null) ? sb.registerNewTeam(hostParty.getPartyName().toString()) : sb.getTeam(hostParty.getPartyName().toString());
-                Team guest = (sb.getTeam(guestparty.getPartyName().toString()) == null) ? sb.registerNewTeam(guestparty.getPartyName().toString()) : sb.getTeam(guestparty.getPartyName().toString());
+                Team guest = (sb.getTeam(guestParty.getPartyName().toString()) == null) ? sb.registerNewTeam(guestParty.getPartyName().toString()) : sb.getTeam(guestParty.getPartyName().toString());
                 host.setColor(hostParty.getPartyName().getChatColor());
-                guest.setColor(guestparty.getPartyName().getChatColor());
+                guest.setColor(guestParty.getPartyName().getChatColor());
                 for (Player ePlayer : game.getOnlinePlayers()) {
                     if (!(host.hasPlayer(ePlayer)) && (hostParty.contains(ePlayer.getUniqueId()))) {
                         host.addPlayer(ePlayer);
-                    } else if (!(guest.hasPlayer(ePlayer)) && guestparty.contains(ePlayer.getUniqueId()))
+                    } else if (!(guest.hasPlayer(ePlayer)) && guestParty.contains(ePlayer.getUniqueId()))
                         guest.addPlayer(ePlayer);
                 }
                 host.setPrefix(hostParty.getPartyName().toString() + " " + hostParty.getName());
-                guest.setPrefix(guestparty.getPartyName().toString() + " " + guestparty.getName());
+                guest.setPrefix(guestParty.getPartyName().toString() + " " + guestParty.getName());
             }
             super.updateContent();
         }

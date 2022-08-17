@@ -120,7 +120,7 @@ game:
   rule-changed-friendly-fire-on: "&c%player_name% 开启了队友误伤"
   rule-changed-friendly-fire-off: "&a%player_name% 关闭了队友误伤"
 
-  party-summary-pvp-game-finish: "%party_name% 的数据：&6伤害%damages% &a击杀%kills% &e吸收%defence%"
+  party-summary-pvp-game-finish: "%party_name% 的数据：&6伤害 %damages% &a击杀 %kills% &c死亡 %deaths%, &f综合表现 &f&l%score%"
   player-summary-pvp-game-finish: "%player_name% 的数据：&6伤害%damages% &a击杀%kills% &e助攻%assits% &c死亡%deathes%"
 
   game-finish-reason-missing-companion: "&7%party_name%中途离开了游戏，游戏结束"
@@ -129,4 +129,6 @@ game:
   move-err-custom: "&7你无法移动这个玩家"
   move-success: "&7你被移动到了 %party_name%"
 
-  too-near-to-spawn: "&7你离他的出生点太近了"
+  too-near-to-spawn: "&7你离出生点太近了"
+  experience-acquired: "&7你获得了 %exp% 经验值奖励"
+

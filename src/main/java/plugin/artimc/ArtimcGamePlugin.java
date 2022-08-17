@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.gmail.filoghost.holographicdisplays.api.HologramsAPI;
 import com.onarandombox.MultiverseCore.MultiverseCore;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
 import org.bukkit.Bukkit;
@@ -30,6 +31,8 @@ public final class ArtimcGamePlugin extends JavaPlugin {
     private MultiverseCore multiverseCore = null;
     private WorldEditPlugin worldEditPlugin = null;
 
+    private HologramsAPI hologramsAPI = null;
+
     @Override
     public void onEnable() {
 
@@ -45,7 +48,7 @@ public final class ArtimcGamePlugin extends JavaPlugin {
         this.getCommand("partymessage").setExecutor(new PartyMessageCommand(this));
         this.getCommand("artimcadmin").setExecutor(new AdminCommand(this));
 
-        if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
+        if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             getLogger().info("============== Artimc Game Placeholder Enabled ==============");
             new GameManagerExpansion(this).register();
             getLogger().info("Artimc Game Placeholder Registered");
@@ -55,13 +58,19 @@ public final class ArtimcGamePlugin extends JavaPlugin {
             getLogger().info("============== Artimc Game Placeholder Disabled ==============");
         }
 
-        if (Bukkit.getPluginManager().getPlugin("Multiverse-Core") != null
-                && Bukkit.getPluginManager().getPlugin("FastAsyncWorldEdit") != null) {
+        if (Bukkit.getPluginManager().isPluginEnabled("Multiverse-Core")
+                && Bukkit.getPluginManager().isPluginEnabled("FastAsyncWorldEdit")) {
             multiverseCore = (MultiverseCore) Bukkit.getPluginManager().getPlugin("Multiverse-Core");
             worldEditPlugin = (WorldEditPlugin) Bukkit.getPluginManager().getPlugin("FastAsyncWorldEdit");
             getLogger().info("============== World Duplication Enabled ==============");
         } else {
             getLogger().info("============== World Duplication Disabled ==============");
+        }
+
+        if (Bukkit.getPluginManager().isPluginEnabled("HolographicDisplays")) {
+            getLogger().info("============== Game Item Pickup Event Enabled ==============");
+        } else {
+            getLogger().info("============== Game Item Pickup Event Disabled ==============");
         }
     }
 

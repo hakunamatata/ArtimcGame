@@ -62,11 +62,8 @@ public class JoinCommand extends DefaultCommand {
         if (game.getGameStatus() == GameStatus.WAITING)
             game.addCompanion(player);
             // 游戏开始之后，加入观察者
-        else if (game.getGameStatus() == GameStatus.GAMING)
-            game.addObserver(player);
-            // 其他阶段无法加入
         else
-            throw new IllegalStateException(getLocaleString("game.u-can-not-join"));
+            game.addObserver(player);
 
         return true;
     }
