@@ -81,14 +81,15 @@ public class PvPGame extends Game {
         // 将玩家队伍设置为新的队伍
         // 更新玩家的计分板
         playerParty.removeSilent(player);
+        party.addSilent(player);
+        getManager().setPlayerParty(player, party);
+
         // 如果将玩家移动到观察者队伍
         if (getObserveParty().equals(party)) {
             setPlayerAsObserver(player);
         }
         // 移动到非观察者队伍
         else {
-            party.addSilent(player);
-            getManager().setPlayerParty(player, party);
             playerParty.updateScoreboard();
             resetPlayer(player);
         }
@@ -333,8 +334,7 @@ public class PvPGame extends Game {
     @Override
     protected GameFinishReason willGameFinish() {
         // 如果游戏过程中，中途任意一支队伍玩家数量为 0 ，比赛终止
-        if ((this.isGaming() || getGameStatus() == GameStatus.FINISH)
-                && (getHostParty() == null || getHostParty().getOnlinePlayers().isEmpty() || getGuestParty() == null || getGuestParty().getOnlinePlayers().isEmpty())) {
+        if ((this.isGaming() || getGameStatus() == GameStatus.FINISH) && (getHostParty() == null || getHostParty().getOnlinePlayers().isEmpty() || getGuestParty() == null || getGuestParty().getOnlinePlayers().isEmpty())) {
             this.setFinishReason(GameFinishReason.MISSING_COMPANION);
         }
 
@@ -464,12 +464,21 @@ public class PvPGame extends Game {
     @Override
     public void onPlayerDamageByPlayer(Player player, Player damager, EntityDamageByEntityEvent eventSource) {
 
-        Party inWitchSpawnParty = inSpawnProtection(damager);
-        // 玩家在自己的出生点，攻击其他玩家，同样无视这种伤害
+        Party inWitchSpawnParty;
+        inWitchSpawnParty = inSpawnProtection(player);
+        // 玩家在己方保护点收到伤害
+        if (inWitchSpawnParty != null && inWitchSpawnParty.contains(player)) {
+            damager.sendMessage(getGameLocaleString("too-near-to-spawn"));
+            eventSource.setCancelled(true);
+        }
+
+        inWitchSpawnParty = inSpawnProtection(damager);
+        // 玩家在己方保护点内攻击其他玩家
         if (inWitchSpawnParty != null && inWitchSpawnParty.contains(damager)) {
             damager.sendMessage(getGameLocaleString("too-near-to-spawn"));
             eventSource.setCancelled(true);
-        } else if (pvpStatstic != null && isGaming()) {
+        }
+        if (pvpStatstic != null && isGaming() && !eventSource.isCancelled()) {
             pvpStatstic.onAttack(getCurrentTick(), damager, player, eventSource.getDamage());
         }
 

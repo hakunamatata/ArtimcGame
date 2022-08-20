@@ -34,6 +34,8 @@ public class LogFactoryGame extends PvPGame {
     private List<String> items;
     private LogFactoryMap map;
 
+    private int scoreMultipler;
+
     public LogFactoryGame(String pvpGameName, Plugin plugin) {
         super(pvpGameName, plugin);
     }
@@ -45,6 +47,7 @@ public class LogFactoryGame extends PvPGame {
         items = map.getResourceItems();
         resPeriod = map.getResourceTimerPeriod();
         resFreq = map.getResourceTimerFreq();
+        scoreMultipler = 1;
         super.onInitialization();
     }
 
@@ -70,7 +73,7 @@ public class LogFactoryGame extends PvPGame {
                 world = getPlugin().getServer().getWorld(map.getWorldName());
                 loc = new Location(world, Integer.valueOf(lots.split(",")[0]), Integer.valueOf(lots.split(",")[1]), Integer.valueOf(lots.split(",")[2]));
 
-                dropItem(new ItemStack(material, amount), loc).setItemMeta("extra-score", extra);
+                dropItem(new ItemStack(material, amount), loc).setItemMeta("extra-score", extra * scoreMultipler);
                 //world.dropItem(loc, new ItemStack(material, amount));
                 log(String.format("资源已生成：%s:%s, 地点：%s, %s %s %s", material, amount, world.getName(), loc.getX(), loc.getY(), loc.getZ()));
             }
@@ -108,6 +111,7 @@ public class LogFactoryGame extends PvPGame {
                     // 生成资源
                     setEnableStatusBar(true);
                     dropItems();
+                    scoreMultipler *= 2;
                     super.onFinish();
                 }
             }.start();
@@ -154,6 +158,7 @@ public class LogFactoryGame extends PvPGame {
             }
         }
     }
+
 
     @Override
     public void onGameItemPickup(GameItemPickupEvent event) {

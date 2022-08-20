@@ -29,7 +29,7 @@ resources:
     multiple: 2
 
   items:
-    - "emerald:4,emerald:8,emerald:12,emerald:16,emerald:20,emerald:24,emerald:28,emerald:32,diamond:1,diamond:2,diamond:3,diamond:4,netherite_scrap:1,netherite_scrap:2;-11,73,-15"
+    - "emerald:4,emerald:8,emerald:12,emerald:16,emerald:20,emerald:24,emerald:28,emerald:32,diamond:1,diamond:2,diamond:3,diamond:4;-11,73,-15"
     - "oak_log:16,spruce_log:16,jungle_log:16,acacia_log:16,dark_oak_log:16;37,73,29"
     - "oak_log:32,spruce_log:32,jungle_log:32,acacia_log:32,dark_oak_log:32,oak_log:64,spruce_log:64,jungle_log:64,acacia_log:64,dark_oak_log:64;35,74,41"
     - "oak_log:16,spruce_log:16,jungle_log:16,acacia_log:16,dark_oak_log:16;23,74,39"

@@ -36,9 +36,6 @@ public class AdminCommandContext extends CommandContext {
         if (getArgs()[0].equals(this.getCommandCofniguration().getString("player")))
             return new PlayerCommand(this);
 
-        if (getArgs()[0].equals("test"))
-            return new TestCommand(this);
-
         return new DefaultCommand(this);
     }
 

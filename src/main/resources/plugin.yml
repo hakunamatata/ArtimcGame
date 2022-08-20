@@ -23,7 +23,5 @@ commands:
     aliases: [ 队伍 ]
   game:
     aliases: [ 游戏 ]
-  partymessage:
-    aliases: [ pm ]
   artimcadmin:
     aliases: [ aa ]

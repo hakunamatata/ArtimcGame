@@ -60,13 +60,12 @@ public class ArtimcGameManager implements Listener {
     public Set<Party> getParties() {
         Set<Party> newSet = new HashSet<>();
         for (Party p : parties.values())
-            if (!newSet.contains(p))
-                newSet.add(p);
+            if (!newSet.contains(p)) newSet.add(p);
         return newSet;
     }
 
     public Set<Game> getGames() {
-        return (Set<Game>) games.values();
+        return Set.of(games.values().toArray(new Game[0]));
     }
 
     /**
@@ -79,8 +78,7 @@ public class ArtimcGameManager implements Listener {
         HashSet<Player> onlinePlayers = new HashSet<>();
         for (UUID uuid : uuids) {
             Player player = getOnlinePlayer(uuid);
-            if (player != null)
-                onlinePlayers.add(player);
+            if (player != null) onlinePlayers.add(player);
         }
         return Collections.unmodifiableSet(onlinePlayers);
     }
@@ -152,25 +150,25 @@ public class ArtimcGameManager implements Listener {
         return parties.putIfAbsent(player, party) == null;
     }
 
-    /**
-     * 玩家开启队伍频道
-     *
-     * @param player
-     * @return
-     */
-    public boolean enablePartyChannel(UUID player) {
-        return enablesPartyChannel.add(player);
-    }
-
-    /**
-     * 玩家关闭队伍频道
-     *
-     * @param player
-     * @return
-     */
-    public boolean disablePartyChannel(UUID player) {
-        return enablesPartyChannel.remove(player);
-    }
+//    /**
+//     * 玩家开启队伍频道
+//     *
+//     * @param player
+//     * @return
+//     */
+//    public boolean enablePartyChannel(UUID player) {
+//        return enablesPartyChannel.add(player);
+//    }
+//
+//    /**
+//     * 玩家关闭队伍频道
+//     *
+//     * @param player
+//     * @return
+//     */
+//    public boolean disablePartyChannel(UUID player) {
+//        return enablesPartyChannel.remove(player);
+//    }
 
     /**
      * 玩家是否加入了队伍频道
@@ -189,7 +187,7 @@ public class ArtimcGameManager implements Listener {
      * @return {@code true} if the player was in a party
      */
     public boolean playerLeaveParty(UUID player) {
-        disablePartyChannel(player);
+//        disablePartyChannel(player);
         return parties.remove(player) != null;
     }
 
@@ -234,8 +232,7 @@ public class ArtimcGameManager implements Listener {
      */
     public boolean containesGame(String name) {
         for (Game game : games.values()) {
-            if (game.getGameName().equals(name))
-                return true;
+            if (game.getGameName().equals(name)) return true;
         }
         return false;
     }
@@ -248,8 +245,7 @@ public class ArtimcGameManager implements Listener {
      */
     public Game getGame(String name) {
         for (Game game : games.values()) {
-            if (game.getGameName().equals(name))
-                return game;
+            if (game.getGameName().equals(name)) return game;
         }
         return null;
     }
@@ -269,11 +265,9 @@ public class ArtimcGameManager implements Listener {
         Party party = getPlayerParty(event.getPlayer().getUniqueId());
         Game game = getPlayerGame(event.getPlayer().getUniqueId());
 
-        if (party != null)
-            party.onPlayerJoin(event.getPlayer());
+        if (party != null) party.onPlayerJoin(event.getPlayer());
 
-        if (game != null)
-            game.onPlayerJoin(event);
+        if (game != null) game.onPlayerJoin(event);
         else {
             // 强制玩家 在大厅中生成
             Boolean forceSpawnLobby = getPlugin().getConfig().getBoolean("settings.force-spawn-lobby", false);
@@ -293,74 +287,65 @@ public class ArtimcGameManager implements Listener {
 
         if (party != null) {
             party.onPlayerQuit(event.getPlayer());
+
         }
 
-        if (game != null)
-            game.onPlayerQuit(event);
+        if (game != null) game.onPlayerQuit(event);
     }
 
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
         Game game = getPlayerGame(event.getPlayer().getUniqueId());
-        if (game != null)
-            game.onPlayerMove(event);
+        if (game != null) game.onPlayerMove(event);
     }
 
     @EventHandler
     public void onPlayerDropItem(PlayerDropItemEvent event) {
         Game game = getPlayerGame(event.getPlayer().getUniqueId());
-        if (game != null)
-            game.onPlayerDropItem(event);
+        if (game != null) game.onPlayerDropItem(event);
     }
 
     @EventHandler
     public void onPlayerGameModeChange(PlayerGameModeChangeEvent event) {
         Game game = getPlayerGame(event.getPlayer().getUniqueId());
-        if (game != null)
-            game.onPlayerGameModeChange(event);
+        if (game != null) game.onPlayerGameModeChange(event);
     }
 
     @EventHandler
     public void onPlayerToggleFlight(PlayerToggleFlightEvent event) {
         Game game = getPlayerGame(event.getPlayer().getUniqueId());
-        if (game != null)
-            game.onPlayerToggleFlight(event);
+        if (game != null) game.onPlayerToggleFlight(event);
     }
 
     @EventHandler
     public void onPlayerFoodLevelChange(FoodLevelChangeEvent event) {
         Game game = getPlayerGame(event.getEntity().getUniqueId());
-        if (game != null)
-            game.onPlayerFoodLevelChange(event);
+        if (game != null) game.onPlayerFoodLevelChange(event);
     }
 
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
         Game game = getPlayerGame(event.getPlayer().getUniqueId());
-        if (game != null)
-            game.onPlayerInteract(event);
+        if (game != null) game.onPlayerInteract(event);
     }
 
     @EventHandler
     public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
         Game game = getPlayerGame(event.getPlayer().getUniqueId());
-        if (game != null)
-            game.onPlayerInteractEntity(event);
+        if (game != null) game.onPlayerInteractEntity(event);
     }
 
     @EventHandler
     public void onPlayerArmorStandManipulate(PlayerArmorStandManipulateEvent event) {
         Game game = getPlayerGame(event.getPlayer().getUniqueId());
-        if (game != null)
-            game.onPlayerArmorStandManipulate(event);
+        if (game != null) game.onPlayerArmorStandManipulate(event);
     }
 
     @EventHandler
     public void onEntityShootBow(EntityShootBowEvent event) {
         if (event.getEntity() instanceof Player) {
             Game game = getPlayerGame(event.getEntity().getUniqueId());
-            if (game != null)
-                game.onPlayerShootBow(event);
+            if (game != null) game.onPlayerShootBow(event);
         }
     }
 
@@ -368,8 +353,7 @@ public class ArtimcGameManager implements Listener {
     public void onProjectileHit(ProjectileHitEvent event) {
         if (event.getEntity().getShooter() instanceof Player) {
             Game game = getPlayerGame(((Player) event.getEntity().getShooter()).getUniqueId());
-            if (game != null)
-                game.onProjectileHit(event);
+            if (game != null) game.onProjectileHit(event);
         }
     }
 
@@ -377,8 +361,7 @@ public class ArtimcGameManager implements Listener {
     public void onEntityDamage(EntityDamageEvent event) {
         if (event.getEntity() instanceof Player) {
             Game game = getPlayerGame(event.getEntity().getUniqueId());
-            if (game != null)
-                game.onPlayerDamage(event);
+            if (game != null) game.onPlayerDamage(event);
         }
     }
 
@@ -389,30 +372,25 @@ public class ArtimcGameManager implements Listener {
             Party party = getPlayerParty(event.getEntity().getUniqueId());
             // 优先处理游戏中的伤害处理
             // 其次处理队伍中的伤害处理
-            if (game != null)
-                game.onPlayerDamageByEntity(event);
-            else if (party != null)
-                party.onPlayerDamageByEntity(event);
+            if (game != null) game.onPlayerDamageByEntity(event);
+            else if (party != null) party.onPlayerDamageByEntity(event);
 
         }
     }
 
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent event) {
-        if (!event.getPlayer().hasPermission("artimc.place.barrier") && (event.getBlock().getType() == Material.BARRIER
-                || event.getBlock().getType() == Material.LEGACY_BARRIER))
+        if (!event.getPlayer().hasPermission("artimc.place.barrier") && (event.getBlock().getType() == Material.BARRIER || event.getBlock().getType() == Material.LEGACY_BARRIER))
             event.setCancelled(true);
 
         Game game = getPlayerGame(event.getPlayer().getUniqueId());
-        if (game != null)
-            game.onBlockPlace(event);
+        if (game != null) game.onBlockPlace(event);
     }
 
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
         Game game = getPlayerGame(event.getPlayer().getUniqueId());
-        if (game != null)
-            game.onBlockBreak(event);
+        if (game != null) game.onBlockBreak(event);
     }
 
     @EventHandler
@@ -424,45 +402,40 @@ public class ArtimcGameManager implements Listener {
     @EventHandler
     public void onPlayerItemConsume(PlayerItemConsumeEvent event) {
         Game game = getPlayerGame(event.getPlayer().getUniqueId());
-        if (game != null)
-            game.onPlayerItemConsume(event);
+        if (game != null) game.onPlayerItemConsume(event);
     }
 
     @EventHandler
     public void onPlayerBucketEmpty(PlayerBucketEmptyEvent event) {
         Game game = getPlayerGame(event.getPlayer().getUniqueId());
-        if (game != null)
-            game.onPlayerBucketEmpty(event);
+        if (game != null) game.onPlayerBucketEmpty(event);
     }
 
     @EventHandler
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         Game game = getPlayerGame(event.getPlayer().getUniqueId());
-        if (game != null)
-            game.onPlayerRespawn(event);
+        if (game != null) game.onPlayerRespawn(event);
     }
 
     @EventHandler
     public void onPlayerDead(PlayerDeathEvent event) {
         Game game = getPlayerGame(event.getPlayer().getUniqueId());
-        if (game != null)
-            game.onPlayerDeath(event);
+        if (game != null) game.onPlayerDeath(event);
     }
 
     @EventHandler
     public void onPlayerChat(PlayerChatEvent event) {
-        Party party = getPlayerParty(event.getPlayer().getUniqueId());
-        if (!event.getMessage().isBlank() && party != null)
-            party.onPlayerChat(event);
+//        Party party = getPlayerParty(event.getPlayer().getUniqueId());
+//        if (!event.getMessage().isBlank() && party != null) party.onPlayerChat(event);
     }
 
     @EventHandler
     public void onPlayCommandSend(PlayerCommandPreprocessEvent event) {
-        for (String cmd : getPlugin().getConfig().getStringList("chat.leave-command")) {
-            if (event.getMessage().equals(cmd)) {
-                disablePartyChannel(event.getPlayer().getUniqueId());
-            }
-        }
+//        for (String cmd : getPlugin().getConfig().getStringList("chat.leave-command")) {
+//            if (event.getMessage().equals(cmd)) {
+//                disablePartyChannel(event.getPlayer().getUniqueId());
+//            }
+//        }
     }
 
 //    @EventHandler

@@ -33,7 +33,6 @@ public class JoinCommand extends DefaultCommand {
 
     @Override
     public boolean execute() {
-        // /game join #game
 
         Player player = getPlayer();
 
@@ -62,7 +61,7 @@ public class JoinCommand extends DefaultCommand {
         if (game.getGameStatus() == GameStatus.WAITING)
             game.addCompanion(player);
             // 游戏开始之后，加入观察者
-        else
+        else if (game.getGameStatus() == GameStatus.GAMING)
             game.addObserver(player);
 
         return true;

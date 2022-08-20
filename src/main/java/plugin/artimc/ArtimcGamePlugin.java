@@ -19,7 +19,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import plugin.artimc.commands.AdminCommand;
 import plugin.artimc.commands.GameCommand;
 import plugin.artimc.commands.PartyCommand;
-import plugin.artimc.commands.PartyMessageCommand;
 import plugin.artimc.placeholder.GameManagerExpansion;
 
 public final class ArtimcGamePlugin extends JavaPlugin {
@@ -45,7 +44,6 @@ public final class ArtimcGamePlugin extends JavaPlugin {
         this.getServer().getPluginManager().registerEvents(this.manager, this);
         this.getCommand("party").setExecutor(new PartyCommand(this));
         this.getCommand("game").setExecutor(new GameCommand(this));
-        this.getCommand("partymessage").setExecutor(new PartyMessageCommand(this));
         this.getCommand("artimcadmin").setExecutor(new AdminCommand(this));
 
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {

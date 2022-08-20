@@ -649,7 +649,6 @@ public class Party {
                 }
             }
         }
-        getManager().disablePartyChannel(player.getUniqueId());
         updateScoreboardOnPlayerEvent(player);
     }
 

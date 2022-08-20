@@ -53,13 +53,6 @@ public class PvPStatstic {
         partyDamages = new HashMap<>();
         partyDefences = new HashMap<>();
         partyScorePlus = new HashMap<>();
-//        for (Party party : game.getGameParties().values()) {
-//            partyKills.put(party.getPartyName(), 0);
-//            partyAssists.put(party.getPartyName(), 0);
-//            partyDeaths.put(party.getPartyName(), 0);
-//            partyDamages.put(party.getPartyName(), 0.0);
-//            partyDefences.put(party.getPartyName(), 0.0);
-//        }
     }
 
     public void addPartyScore(Party party, int score) {
@@ -138,7 +131,21 @@ public class PvPStatstic {
             double multiplier = partyKills.getOrDefault(pn, 0) - partyDeaths.getOrDefault(pn, 0);
             if (multiplier <= 0) multiplier = 1;
             else if (multiplier == 1) multiplier += 0.5;
-            return party_damage / 10 * multiplier + getPartyExtraScore(party);
+            /**
+             * 表现分算法：
+             *  战斗表现
+             *  伤害表现
+             *  资源表现
+             *
+             * 击杀*10 + 助攻*2 - 死亡*5
+             */
+            int combatPerformance = partyKills.getOrDefault(pn, 0) * 10
+                    + partyAssists.getOrDefault(pn, 0) * 2
+                    - partyDeaths.getOrDefault(pn, 0) * 5;
+            combatPerformance = combatPerformance >= 0 ? combatPerformance : 0;
+            double damagePerformance = party_damage / 10;
+            int resourcePerformance = getPartyExtraScore(party);
+            return damagePerformance + combatPerformance + resourcePerformance;
         } catch (Exception ex) {
             return 0;
         }
