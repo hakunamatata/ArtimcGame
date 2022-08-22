@@ -64,9 +64,9 @@ public abstract class Game extends BukkitRunnable implements IGameListener, Auto
     private GameWorld world;
     private int gameStartAt = -1;
     private int gameFinishAt = 999999999;
+    private int gameLeftTick = -1;
     // 玩家的Buff效果
     private final Set<UUID> invinciblePlayers;
-
     private Set<GameItem> gameItems;
 
     protected Game(final String gameName, final Plugin plugin) {
@@ -187,6 +187,14 @@ public abstract class Game extends BukkitRunnable implements IGameListener, Auto
 
     public Map<PartyName, Party> getGameParties() {
         return gameParties;
+    }
+
+    public int getGameLeftTick() {
+        return gameLeftTick;
+    }
+
+    protected void setGameLeftTick(int gameLeftTick) {
+        this.gameLeftTick = gameLeftTick;
     }
 
     /**
@@ -569,7 +577,6 @@ public abstract class Game extends BukkitRunnable implements IGameListener, Auto
         gameStartAt = getCurrentTick();
         // 修改队伍的计分板
         changeGameScoreboard(useScoreboard(), this.getClass());
-
         /**
          * 游戏开始计时器
          */
@@ -585,6 +592,7 @@ public abstract class Game extends BukkitRunnable implements IGameListener, Auto
 
             @Override
             protected void onUpdate() {
+                setGameLeftTick(getPeriod() - getCurrent());
                 if (enableStatusBar) getStatusBar().setProgress((double) getCurrent() / (double) getPeriod());
             }
         }.start();
@@ -857,67 +865,80 @@ public abstract class Game extends BukkitRunnable implements IGameListener, Auto
     }
 
     public void closeGame() {
-        if (timerManager.get(Game.FINISH_PERIOD_TIMER_NAME) != null)
-            timerManager.get(Game.FINISH_PERIOD_TIMER_NAME).close();
 
-        isClosing = true;
-        // 停止游戏
-        cancel();
-        setInvisibility(false);
-        isRunning = false;
-        // 清理计时器
         try {
-            for (GameTimer timer : timerManager.values()) {
-                timer.close();
+            gameStatus = GameStatus.CLOSING;
+            isClosing = true;
+            // 停止游戏
+            cancel();
+            setInvisibility(false);
+            isRunning = false;
+            // 清理计时器
+            try {
+                for (GameTimer timer : timerManager.values()) {
+                    timer.close();
+                }
+            } catch (Exception ex) {
+                log(ex.getMessage());
             }
-        } catch (Exception ex) {
-            log(ex.getMessage());
-        }
-        timerManager.clear();
-        onGameClosing();
-        // 清空数据
-        // 将队伍的游戏删掉
-        statusBar.removeAll();
-        // 将游戏中的队伍清理掉
-        for (Party party : gameParties.values()) {
-            gameParties.remove(party.getPartyName());
-            party.sendMessage(getGameLocaleString("game-is-closed"));
-            party.setGame(null);
-            party.setPartyName(null);
-            // 将游戏内队伍的计分板设置为队伍计分板
-            party.setScoreboard(new PartyScoreboard(party.getScoreboard(), party));
-            party.updateScoreboard();
-            for (UUID player : party.getPlayers()) {
-                remove(player);
-                OfflinePlayer offline = getPlugin().getServer().getOfflinePlayer(player);
-                if (offline.isOnline()) {
-                    ((Player) offline).teleport(getGameMap().getLobby());
+            timerManager.clear();
+            onGameClosing();
+            // 清空数据
+            // 将队伍的游戏删掉
+            statusBar.removeAll();
+            // 将游戏中的队伍清理掉
+            for (Party party : gameParties.values()) {
+                gameParties.remove(party.getPartyName());
+                party.sendMessage(getGameLocaleString("game-is-closed"));
+                party.setGame(null);
+                party.setPartyName(null);
+                // 将游戏内队伍的计分板设置为队伍计分板
+                party.setScoreboard(new PartyScoreboard(party.getScoreboard(), party));
+                party.updateScoreboard();
+                for (UUID player : party.getPlayers()) {
+                    remove(player);
+                    OfflinePlayer offline = getPlugin().getServer().getOfflinePlayer(player);
+                    if (offline.isOnline()) {
+                        ((Player) offline).teleport(getGameMap().getLobby());
+                    }
                 }
             }
-        }
-        // ========= 观察者队伍 处理 =========
+            // ========= 观察者队伍 处理 =========
 
-        // 删除观察者队伍中的玩家
-        for (UUID player : observeParty.getPlayers()) {
+            clearObserver();
+            // ========= 观察者队伍 处理 =========
+            // 清理队伍
+            gameParties.clear();
+            // 清理玩家
+            players.clear();
+            winners.clear();
+            losers.clear();
+            invinciblePlayers.clear();
+            playerPlacedBlocks.clear();
+
+        } catch (Exception ex) {
+            log(ex.getMessage());
+        } finally {
+            // 游戏结束重置地形
+            world.reset();
+        }
+    }
+
+    public void onWorldReset() {
+        onGameClose();
+        close();
+    }
+
+    private void clearObserver() {
+        Object[] players = observeParty.getPlayers().toArray().clone();
+        for (Object obj : players) {
+            UUID player = (UUID) obj;
             observeParty.getScoreboard().remove(player);
             OfflinePlayer offline = getPlugin().getServer().getOfflinePlayer(player);
             resetPlayer((Player) offline);
             observeParty.leave(offline);
             leaveGame(((Player) offline));
         }
-        // ========= 观察者队伍 处理 =========
-        // 清理队伍
-        gameParties.clear();
-        // 清理玩家
-        players.clear();
-        winners.clear();
-        losers.clear();
-        invinciblePlayers.clear();
-        playerPlacedBlocks.clear();
-        // 游戏结束重置地形
-        world.reset();
-        onGameClose();
-        close();
     }
 
     /**
@@ -1237,8 +1258,7 @@ public abstract class Game extends BukkitRunnable implements IGameListener, Auto
     /**
      * This will be called when a player in this game takes damage by another player
      */
-    public void onPlayerDamageByPlayer(final Player player, final Player damager,
-                                       final EntityDamageByEntityEvent eventSource) {
+    public void onPlayerDamageByPlayer(final Player player, final Player damager, final EntityDamageByEntityEvent eventSource) {
 
     }
 

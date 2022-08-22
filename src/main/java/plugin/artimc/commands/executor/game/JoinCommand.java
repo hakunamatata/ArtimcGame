@@ -63,6 +63,9 @@ public class JoinCommand extends DefaultCommand {
             // 游戏开始之后，加入观察者
         else if (game.getGameStatus() == GameStatus.GAMING)
             game.addObserver(player);
+            // 游戏关闭过程中无法进入
+        else if (game.getGameStatus() == GameStatus.CLOSING)
+            throw new IllegalStateException(getLocaleString("game.world-is-on-reset"));
 
         return true;
     }

@@ -76,7 +76,7 @@ public class GameManagerExpansion extends PlaceholderExpansion {
             String gameName = params.replace("status_", "");
             String status = "";
             Game game = plugin.getManager().getGame(gameName);
-            if (game == null) status = "&7已关闭";
+            if (game == null) status = "&7N/A";
             else {
                 switch (game.getGameStatus()) {
                     case WAITING:
@@ -87,6 +87,9 @@ public class GameManagerExpansion extends PlaceholderExpansion {
                         break;
                     case FINISH:
                         status = "&9结算中";
+                        break;
+                    case CLOSING:
+                        status = "&c关闭中";
                         break;
                     default:
                         status = "&7已关闭";

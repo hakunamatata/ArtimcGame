@@ -55,7 +55,6 @@ engine:
     #默认游戏结算时间
     finish: 10
 
-#party指令本地化设置
 commands:
   admin:
     party: 队伍
@@ -83,9 +82,8 @@ commands:
     save: 保存
     reload: 重载
     leave: 离开
-    inventory: 物品栏
+    mode: 模式
 
-#party指令参数本地化设置
 params:
   admin:
   party:
@@ -107,17 +105,18 @@ params:
       finish-period: 结算时间
 
       # 物品栏使用策略
-      inventory: 物品栏
+      mode: 模式
 
-    inventory:
-      save: 保存
-      recover: 恢复
+    mode-action:
+      add: 添加
+      remove: 删除
     rule:
       name: 规则
 
       item: 物品
       friendlyFire: 队友误伤
 
+      mode: 比赛模式
       enable: "允许"
       disable: "禁止"
       items:

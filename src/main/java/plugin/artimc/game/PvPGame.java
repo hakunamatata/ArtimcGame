@@ -1,19 +1,19 @@
 package plugin.artimc.game;
 
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 
 import org.bukkit.GameMode;
 import org.bukkit.boss.BarColor;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.event.player.PlayerBucketEmptyEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.plugin.Plugin;
 
 import org.jetbrains.annotations.NotNull;
@@ -34,6 +34,7 @@ public class PvPGame extends Game {
     private PartyName guestPartyName;
     private PvPStatstic pvpStatstic;
     private PvPItemControl pvpItemController;
+    private String gameMode;
 
     public PvPGame(String pvpGameName, Plugin plugin) {
         super(pvpGameName, plugin);
@@ -44,6 +45,19 @@ public class PvPGame extends Game {
         pvpStatstic = new PvPStatstic(this);
         pvpItemController = new PvPItemControl(this);
     }
+
+    public String getGameMode() {
+        return gameMode;
+    }
+
+    public void setGameMode(String gameMode) {
+        this.gameMode = gameMode;
+    }
+
+    public List<String> getAvaliableGameModes() {
+        return getPlugin().getGameConfigurations().get(getGameName()).getStringList("modes.list");
+    }
+
 
     public PvPItemControl getPvpItemController() {
         return pvpItemController;
@@ -107,16 +121,26 @@ public class PvPGame extends Game {
         if (isGaming() && pvpItemController != null) {
             pvpItemController.replaceItems();
         }
+//        // debug shit
+//        for (GameTimer timer : getTimerManager().values()) {
+//            if (timer instanceof GameBuffEffect) {
+//                log(String.format("------- timer: %s --------", ((GameBuffEffect) timer).getBuffName()));
+//                log(String.format(" Player: %s, period: %s, current: %s", ((GameBuffEffect) timer).getPlayer().getName(), timer.getPeriod(), timer.getCurrent()));
+//            }
+//        }
+        super.onFixedUpdate();
+    }
 
-        // debug shit
-        for (GameTimer timer : getTimerManager().values()) {
-            if (timer instanceof GameBuffEffect) {
-                log(String.format("------- timer: %s --------", ((GameBuffEffect) timer).getBuffName()));
-                log(String.format(" Player: %s, period: %s, current: %s", ((GameBuffEffect) timer).getPlayer().getName(), timer.getPeriod(), timer.getCurrent()));
+
+    private void clearDropItemsOnUnifiedMode() {
+        if (pvpItemController != null && pvpItemController.isUnifiedInventory()) {
+            List<Entity> list = getGameMap().getWorld().getEntities();
+            for (Entity current : list) {
+                if (current instanceof Item) {
+                    current.remove();
+                }
             }
         }
-
-        super.onFixedUpdate();
     }
 
     @Override
@@ -387,6 +411,10 @@ public class PvPGame extends Game {
                 getStatusBar().setColor(BarColor.RED);
                 getStatusBar().setTitle("§4§l" + getGameLocaleString("status-title-time-left", false).replace("%time%", StringUtil.formatTime(timer.getCurrent())));
             }
+            // 清理物品
+            if (getGameLeftTick() == 9) {
+                clearDropItemsOnUnifiedMode();
+            }
         } else if (timer.getName().equals(Game.FINISH_PERIOD_TIMER_NAME)) {
             getStatusBar().setTitle(getGameLocaleString("status-title-game-finsih", false));
             getStatusBar().setColor(BarColor.BLUE);
@@ -574,5 +602,16 @@ public class PvPGame extends Game {
     @Override
     public void onGameItemPickup(GameItemPickupEvent event) {
         super.onGameItemPickup(event);
+    }
+
+    @Override
+    public void onPlayerDropItem(PlayerDropItemEvent event) {
+        // 游戏已结束，或者游戏时间还剩60秒
+        // 玩家无法丢弃物品
+        if (pvpItemController != null && pvpItemController.isUnifiedInventory()
+                && (getGameStatus() == GameStatus.FINISH || (getGameStatus() == GameStatus.GAMING && getGameLeftTick() <= 10))) {
+            event.setCancelled(false);
+        }
+        super.onPlayerDropItem(event);
     }
 }

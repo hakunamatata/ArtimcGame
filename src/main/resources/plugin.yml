@@ -15,6 +15,9 @@ permissions:
   artimc.game.admin:
     description: 是否允许配置游戏
     default: false
+  artimc.game.mode:
+    description: 是否允许玩家设置模式
+    default: false
   artimc.admin:
     description: 是否具有管理员资格
     default: false

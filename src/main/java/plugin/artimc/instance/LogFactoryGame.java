@@ -10,6 +10,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 import plugin.artimc.ArtimcGamePlugin;
 import plugin.artimc.engine.GameFinishReason;
+import plugin.artimc.engine.GameStatus;
 import plugin.artimc.engine.GameTimer;
 import plugin.artimc.engine.Party;
 import plugin.artimc.engine.event.GameItemPickupEvent;
@@ -93,7 +94,9 @@ public class LogFactoryGame extends PvPGame {
                 @Override
                 protected void onStart() {
                     // 隐藏默认标题
-                    setEnableStatusBar(false);
+                    if (getGameStatus() == GameStatus.GAMING) {
+                        setEnableStatusBar(false);
+                    }
                     super.onStart();
                 }
 
@@ -109,9 +112,11 @@ public class LogFactoryGame extends PvPGame {
                 @Override
                 protected void onFinish() {
                     // 生成资源
-                    setEnableStatusBar(true);
-                    dropItems();
-                    scoreMultipler *= 2;
+                    if (getGameStatus() == GameStatus.GAMING) {
+                        setEnableStatusBar(true);
+                        dropItems();
+                        scoreMultipler *= 2;
+                    }
                     super.onFinish();
                 }
             }.start();
@@ -124,6 +129,9 @@ public class LogFactoryGame extends PvPGame {
     protected void onGameFinish(GameFinishReason reason) {
         if (reason == GameFinishReason.GAMING_TIMEOUT) {
             giveExperienceReward();
+        }
+        if (getTimerManager().get("resource-drop") != null) {
+            getTimerManager().get("resource-drop").close();
         }
         super.onGameFinish(reason);
     }

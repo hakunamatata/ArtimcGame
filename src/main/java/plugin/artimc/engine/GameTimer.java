@@ -29,6 +29,8 @@ public abstract class GameTimer {
     }
 
 
+
+
     private Game game;
 
     public GameTimer(String name, int period, Game game) {
@@ -81,9 +83,9 @@ public abstract class GameTimer {
 
     public void tick() {
         try {
-            this.onUpdate();
             current--;
             if (current < 0) current = 0;
+            this.onUpdate();
         } catch (Exception ex) {
             game.getPlugin().getLogger().warning(ex.getMessage());
         }

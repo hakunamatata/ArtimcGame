@@ -131,4 +131,6 @@ game:
 
   too-near-to-spawn: "&7你离出生点太近了"
   experience-acquired: "&7你获得了 %exp% 经验值奖励"
+  match-mode-changed: "&c%player_name%设置了比赛模式：%mode%，请将贵重物品保存至末影箱"
+  world-is-on-reset: "&7正在重建地形，请稍后再进入"
 

@@ -37,7 +37,8 @@ public class GameWorld {
     /**
      * 当前游戏的世界是否存在
      *
-     * @return
+     * @return个
+     *
      */
     public boolean exist() {
         String worldName = game.getGameMap().getWorldName();
@@ -66,6 +67,9 @@ public class GameWorld {
                 try {
                     ClipboardFormats.findByFile(schema).load(schema).paste(createWorldIfAbsent(), BlockVector3.at(0, height, 0), false, false, (Transform) null);
                     game.log(String.format("地形已重置"));
+                    game.getPlugin().getServer().getScheduler().getMainThreadExecutor(game.getPlugin()).execute(() -> {
+                        game.onWorldReset();
+                    });
                     // 需要添加时间通知
                     // 仍有多次导入地形的情况发生
                 } catch (Exception ex) {
@@ -76,8 +80,7 @@ public class GameWorld {
     }
 
     /**
-     * 获取游戏的世界，如果没有的话，为他创建一个
-     *
+     * 获取游戏的世界，如果没有的话，为他创建一
      * @return
      */
     public BukkitWorld createWorldIfAbsent() {

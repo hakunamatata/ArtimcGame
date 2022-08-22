@@ -33,6 +33,8 @@ resources:
     - "oak_log:16,spruce_log:16,jungle_log:16,acacia_log:16,dark_oak_log:16;37,73,29"
     - "oak_log:32,spruce_log:32,jungle_log:32,acacia_log:32,dark_oak_log:32,oak_log:64,spruce_log:64,jungle_log:64,acacia_log:64,dark_oak_log:64;35,74,41"
     - "oak_log:16,spruce_log:16,jungle_log:16,acacia_log:16,dark_oak_log:16;23,74,39"
+modes:
+
 
 translate:
   item-pickup: "%party_name% 完成了额外目标, 表现分加 %score%"

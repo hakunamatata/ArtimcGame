@@ -11,6 +11,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
+import plugin.artimc.utils.PlayerUtil;
 
 /**
  * 描述：PvPItemControl，物品控制
@@ -28,12 +29,26 @@ public class PvPItemControl {
     private Map<String, String> matMap;
     private Map<UUID, Integer> playerElytraDamages;
 
+    private Map<UUID, String> playerInventoryBackup;
+
+    public boolean isUnifiedInventory() {
+        return unifiedInventory != null && !unifiedInventory.isBlank();
+    }
+
+    public void setUnifiedInventory(String unifiedInventory) {
+        this.unifiedInventory = unifiedInventory;
+    }
+
+    private String unifiedInventory = "";
+
     public PvPItemControl(PvPGame game) {
         this.game = game;
         initialbanMaterials();
         initialMaterialNameMap();
         playerElytraDamages = new HashMap<>();
+        playerInventoryBackup = new HashMap<>();
     }
+
 
     private void initialbanMaterials() {
         banMaterials = new HashMap<>();
@@ -176,50 +191,66 @@ public class PvPItemControl {
     }
 
     private void replaceItemForPlayer(Player p) {
-        for (ItemStack stack : p.getInventory().getContents()) {
-            if (stack == null || stack.getType().isAir())
-                continue;
-            if (Boolean.TRUE.equals(banMaterials.getOrDefault(stack.getType().name().toLowerCase(), false))) {
-                ItemMeta i = stack.getItemMeta();
-                if (stack.getType() == Material.ELYTRA) {
-                    Damageable d = (Damageable) i;
-                    if (!playerElytraDamages.containsKey(p.getUniqueId()) || d.getDamage() > 0) {
-                        playerElytraDamages.put(p.getUniqueId(), d.getDamage());
-                        // 鞘翅耐久度变为0
-                        d.setDamage(999999);
+        // 未统一物品栏
+        if (!isUnifiedInventory()) {
+            for (ItemStack stack : p.getInventory().getContents()) {
+                if (stack == null || stack.getType().isAir()) continue;
+                if (Boolean.TRUE.equals(banMaterials.getOrDefault(stack.getType().name().toLowerCase(), false))) {
+                    ItemMeta i = stack.getItemMeta();
+                    if (stack.getType() == Material.ELYTRA) {
+                        Damageable d = (Damageable) i;
+                        if (!playerElytraDamages.containsKey(p.getUniqueId()) || d.getDamage() > 0) {
+                            playerElytraDamages.put(p.getUniqueId(), d.getDamage());
+                            // 鞘翅耐久度变为0
+                            d.setDamage(999999);
+                            stack.setItemMeta(i);
+                        }
+                    } else {
+                        i.setDisplayName(replaceDisplayName(stack.getType()));
+                        stack.setType(Material.BARRIER);
                         stack.setItemMeta(i);
                     }
-                } else {
-                    i.setDisplayName(replaceDisplayName(stack.getType()));
-                    stack.setType(Material.BARRIER);
-                    stack.setItemMeta(i);
                 }
+            }
+        }
+        // 规则模式统一了玩家的物品栏
+        else {
+            if (!playerInventoryBackup.containsKey(p.getUniqueId())) {
+                playerInventoryBackup.put(p.getUniqueId(), PlayerUtil.serializerInventory(p));
+                PlayerUtil.deserializeInventory(p, unifiedInventory);
             }
         }
     }
 
     public void recoverItemForPlayer(Player p) {
-        for (int i = 0; i < p.getInventory().getSize(); i++) {
-            ItemStack stack = p.getInventory().getItem(i);
-            if (stack == null || (stack.getType() != Material.BARRIER && stack.getType() != Material.ELYTRA))
-                continue;
+        // 未统一物品栏
+        if (!isUnifiedInventory()) {
+            for (int i = 0; i < p.getInventory().getSize(); i++) {
+                ItemStack stack = p.getInventory().getItem(i);
+                if (stack == null || (stack.getType() != Material.BARRIER && stack.getType() != Material.ELYTRA))
+                    continue;
 
-            ItemMeta m = stack.getItemMeta();
-            if (stack.getType() == Material.ELYTRA) {
-                Damageable d = (Damageable) m;
-                if (playerElytraDamages.containsKey(p.getUniqueId())) {
-                    d.setDamage(playerElytraDamages.get(p.getUniqueId()));
+                ItemMeta m = stack.getItemMeta();
+                if (stack.getType() == Material.ELYTRA) {
+                    Damageable d = (Damageable) m;
+                    if (playerElytraDamages.containsKey(p.getUniqueId())) {
+                        d.setDamage(playerElytraDamages.get(p.getUniqueId()));
+                    }
+                    stack.setItemMeta(m);
+                } else {
+                    String matName = matMap.getOrDefault(recoverDisplayName(m), "AIR");
+                    Material material;
+                    try {
+                        material = Material.valueOf(matName.toUpperCase());
+                    } catch (Exception ex) {
+                        material = Material.AIR;
+                    }
+                    p.getInventory().setItem(i, new ItemStack(material, stack.getAmount()));
                 }
-                stack.setItemMeta(m);
-            } else {
-                String matName = matMap.getOrDefault(recoverDisplayName(m), "AIR");
-                Material material;
-                try {
-                    material = Material.valueOf(matName.toUpperCase());
-                } catch (Exception ex) {
-                    material = Material.AIR;
-                }
-                p.getInventory().setItem(i, new ItemStack(material, stack.getAmount()));
+            }
+        } else {
+            if (playerInventoryBackup.containsKey(p.getUniqueId())) {
+                PlayerUtil.deserializeInventory(p, playerInventoryBackup.get(p.getUniqueId()));
             }
         }
     }

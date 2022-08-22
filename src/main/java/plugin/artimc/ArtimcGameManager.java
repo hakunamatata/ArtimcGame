@@ -33,6 +33,8 @@ public class ArtimcGameManager implements Listener {
     // 玩家所在游戏
     private final Map<UUID, Game> games;
 
+    //private final Map<String, >
+
     // 玩家队伍聊天频道
     private final Set<UUID> enablesPartyChannel;
 
@@ -251,14 +253,14 @@ public class ArtimcGameManager implements Listener {
     }
 
     public void removeGame(String name) {
-        Object[] objs = games.values().toArray(new Game[0]);
-        for (Object o : objs) {
-            Game game = (Game) o;
-            if (name.equals(game.getGameName())) {
-                games.remove(game);
+        Object[] keys = games.keySet().toArray().clone();
+        for (Object key : keys) {
+            if (games.get(key).getGameName().equals(name)) {
+                games.remove(key);
             }
         }
     }
+
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
@@ -279,6 +281,8 @@ public class ArtimcGameManager implements Listener {
         }
 
     }
+
+
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
