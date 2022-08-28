@@ -29,6 +29,11 @@ public abstract class AbstractManager<K, T> implements IManager<K, T> {
         return hashMap.get(key);
     }
 
+    public T get(K key, T defaultValue) {
+        if (!hashMap.containsKey(key)) return defaultValue;
+        return get(key);
+    }
+
     public boolean add(K key, T obj) {
         return hashMap.putIfAbsent(key, obj) == null;
     }

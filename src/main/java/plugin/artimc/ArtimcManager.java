@@ -326,13 +326,8 @@ public class ArtimcManager implements IComponent, Listener {
         }
     }
 
-//    @EventHandler
-//    public void onExplode(BlockExplodeEvent event) {
-//        //event.getBlock().getWorld()
-//        for (Game game : games.values()) {
-//            if (game.getGameMap().getWorldName().equals(event.getBlock().getWorld().getName())) {
-//
-//            }
-//        }
-//    }
+    @EventHandler
+    public void onExplode(BlockExplodeEvent event) {
+
+    }
 }

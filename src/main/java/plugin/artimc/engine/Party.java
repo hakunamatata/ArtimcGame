@@ -105,41 +105,36 @@ public class Party extends AbstractComponent {
         return partyName;
     }
 
-    /**
-     * 自动获取队伍名称，优先级：
-     * 1. 自定义名称
-     * 2. PartyName名称
-     * 3. 队长名称
-     */
-    public String getName() {
+    private String getNameText() {
+        if (customName != null && !customName.isBlank()) {
+            return customName;
+        }
+        if (game != null && partyName != null) {
+            return partyName.getName();
+        }
+        if (owner != null) {
+            OfflinePlayer player = getOfflinePlayer(owner);
+            return player.getName() + getLocaleString("command.s-party", false);
+        }
+
+        return getLocaleString("default-party-name", false);
+    }
+
+    public String getName(boolean withoutFormat) {
+        if (withoutFormat) return getNameText();
 
         String color = "§f";
         if (customName != null && !customName.isBlank()) {
             if (game != null && partyName != null) {
                 return partyName + "§o" + customName + "§r";
             } else {
-                return color + "§o" + customName + "§r";
+                return "§o" + customName + "§r";
             }
         }
 
         if (game != null && partyName != null) {
             color = partyName.toString();
-            switch (partyName) {
-                case ORANGE:
-                    return color + "橙队";
-                case YELLOW:
-                    return color + "黄队";
-                case GREEN:
-                    return color + "绿队";
-                case LIME:
-                    return color + "青队";
-                case BLUE:
-                    return color + "蓝队";
-                case PURPLE:
-                    return color + "紫队";
-                default:
-                    return color + "红队";
-            }
+            return color + partyName.getName();
         }
 
         if (owner != null) {
@@ -148,6 +143,16 @@ public class Party extends AbstractComponent {
         }
 
         return getLocaleString("default-party-name", false);
+    }
+
+    /**
+     * 自动获取队伍名称，优先级：
+     * 1. 自定义名称
+     * 2. PartyName名称
+     * 3. 队长名称
+     */
+    public String getName() {
+        return getName(false);
     }
 
     public String getLocaleString(String path) {
@@ -505,14 +510,8 @@ public class Party extends AbstractComponent {
         if (!this.contains(player) || chat.isBlank()) return;
 
         String format = ChatColor.translateAlternateColorCodes('&', getPlayerChannelManager().getChatFormat());
-        String message = format.replace("%player_name%", player.getName()).replace("%party_name%", getName()).replace("%message%", chat);
+        String message = format.replace("%player_name%", player.getName()).replace("%party_name%", getName(true)).replace("%message%", chat);
         sendMessage(message);
-    }
-
-    public void setSpawn(Location location) {
-        for (Player player : getOnlinePlayers()) {
-            player.setBedSpawnLocation(location);
-        }
     }
 
     /**
@@ -725,7 +724,7 @@ public class Party extends AbstractComponent {
      * @param event
      */
     public void onPlayerChat(PlayerChatEvent event) {
-        if (getPlayerChannelManager().get(event.getPlayer().getUniqueId())) {
+        if (getPlayerChannelManager().get(event.getPlayer().getUniqueId(), false)) {
             chat(event.getPlayer(), event.getMessage());
             event.setCancelled(true);
         }

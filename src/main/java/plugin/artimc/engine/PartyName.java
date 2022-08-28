@@ -75,6 +75,25 @@ public enum PartyName {
         }
     }
 
+    public String getName() {
+        switch (this) {
+            case ORANGE:
+                return "橙队";
+            case YELLOW:
+                return "黄队";
+            case GREEN:
+                return "绿队";
+            case LIME:
+                return "青队";
+            case BLUE:
+                return "蓝队";
+            case PURPLE:
+                return "紫队";
+            default:
+                return "红队";
+        }
+    }
+
 
     @Override
     public String toString() {
@@ -94,7 +113,7 @@ public enum PartyName {
             case PURPLE:
                 return "§5";
             default:
-                return "§f";
+                return "§r";
         }
     }
 }
