@@ -8,7 +8,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import plugin.artimc.commands.context.CommandContext;
 import plugin.artimc.commands.context.GameCommandContext;
 import plugin.artimc.commands.executor.CommandExecutor;
-import plugin.artimc.engine.Game;
+import plugin.artimc.engine.IGame;
 import plugin.artimc.game.PvPGame;
 
 public class DefaultCommand extends CommandExecutor {
@@ -18,15 +18,15 @@ public class DefaultCommand extends CommandExecutor {
     }
 
     protected String getCommandString(String path) {
-        return getContext().getCommandCofniguration().getString(path);
+        return getContext().getCommandConfiguration().getString(path);
     }
 
     protected String getParamsString(String path) {
-        return getContext().getParameterCofniguration().getString(path);
+        return getContext().getParameterConfiguration().getString(path);
     }
 
     protected List<String> getParamsStringList(String path) {
-        return getContext().getParameterCofniguration().getStringList(path);
+        return getContext().getParameterConfiguration().getStringList(path);
     }
 
     protected YamlConfiguration getGameConfiguration(String game) {
@@ -42,11 +42,11 @@ public class DefaultCommand extends CommandExecutor {
 
     @Override
     protected String getLocaleString(String path, boolean prefix) {
-        Game game = getGame();
+        IGame game = getGame();
         String prefixString = "";
         if (prefix) {
             if (game == null) prefixString = super.getLocaleString("prefix-default-game", false);
-            else prefixString = super.getLocaleString("prefix-game", false).replace("%game%", game.getGameName());
+            else prefixString = super.getLocaleString("prefix-game", false).replace("%game%", game.getName());
         }
         return prefixString + super.getLocaleString(path, false);
     }
@@ -58,7 +58,7 @@ public class DefaultCommand extends CommandExecutor {
 
     @Override
     public List<String> suggest() {
-        Game game = getGame();
+        IGame game = getGame();
         List<String> list = new ArrayList<>();
         // 如果具有管理权限
         if (hasPermission("artimc.game.admin"))

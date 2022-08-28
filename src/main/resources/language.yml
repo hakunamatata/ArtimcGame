@@ -88,7 +88,7 @@ game:
   status-title-waiting-party: "&c&l等待玩家加入游戏..."
   status-title-waiting-ready: "&e&l等待队长准备就绪..."
   status-title-gaming: "&a&l游戏开始"
-  status-title-game-finsih: "&9&l结算中..."
+  status-title-game-finish: "&9&l结算中..."
   status-title-time-left: "剩余时间：%time%"
 
   no-avaliable-party-name: "&7当前游戏队伍已满，无法加入"

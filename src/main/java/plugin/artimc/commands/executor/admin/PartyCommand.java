@@ -12,7 +12,7 @@ public class PartyCommand extends DefaultCommand {
 
     @Override
     public boolean execute() {
-        for (Party p : getManager().getParties()) {
+        for (Party p : getPlayerPartyManager().list()) {
             int onlineSize = p.getOnlinePlayers().size();
             String message = "&e队长：%owner%  &a在线：%online%  &7:离线%offline%  "
                     .replace("%owner%", p.getOwnerName())

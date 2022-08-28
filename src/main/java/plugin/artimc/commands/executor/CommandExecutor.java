@@ -6,31 +6,19 @@ import java.util.UUID;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
-import plugin.artimc.ArtimcGameManager;
-import plugin.artimc.ArtimcGamePlugin;
+import plugin.artimc.ArtimcManager;
+import plugin.artimc.ArtimcPlugin;
+import plugin.artimc.WorldManager;
 import plugin.artimc.commands.context.CommandContext;
-import plugin.artimc.engine.Game;
+import plugin.artimc.common.AbstractComponent;
+import plugin.artimc.engine.IGame;
 import plugin.artimc.engine.Party;
 
-public abstract class CommandExecutor {
-
+public abstract class CommandExecutor extends AbstractComponent {
     private CommandContext context;
 
     public CommandContext getContext() {
         return context;
-    }
-
-    /**
-     * 游戏与队伍管理器
-     * 
-     * @return
-     */
-    protected ArtimcGameManager getManager() {
-        return context.getPlugin().getManager();
-    }
-
-    protected ArtimcGamePlugin getPlugin() {
-        return context.getPlugin();
     }
 
     protected String tryGetArg(int index) {
@@ -64,17 +52,18 @@ public abstract class CommandExecutor {
         return getManager().getPlayerParty(getPlayer().getUniqueId());
     }
 
-    protected Game getGame() {
+    protected IGame getGame() {
         return getManager().getPlayerGame(getPlayer().getUniqueId());
     }
 
     protected CommandExecutor(CommandContext context) {
+        super(context.getPlugin());
         this.context = context;
     }
 
     protected OfflinePlayer getOfflinePlayer(String name) {
         OfflinePlayer player = getPlugin().getServer().getPlayerExact(name); // find online player with given
-                                                                             // name
+        // name
         if (player == null) { // if offline, search usercache for player with given name
             for (OfflinePlayer p : getPlugin().getServer().getOfflinePlayers()) {
                 if (name.equalsIgnoreCase(p.getName())) {

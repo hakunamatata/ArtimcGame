@@ -6,6 +6,10 @@ public class StringUtil {
 
     }
 
+    public static boolean isNullOrEmpoty(String value) {
+        return value == null || value.isEmpty();
+    }
+
     /**
      * Trim a string if it is longer than a certain length.
      *

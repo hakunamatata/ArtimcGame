@@ -11,11 +11,12 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.Plugin;
 
+import plugin.artimc.ArtimcPlugin;
 import plugin.artimc.utils.Utils;
 
 public class GameMap {
 
-    protected Plugin plugin;
+    protected ArtimcPlugin plugin;
     protected YamlConfiguration config;
     private String name;
     private String description;
@@ -145,7 +146,11 @@ public class GameMap {
     private int gamePeriod = 120;
     private int finishPeriod = 10;
 
-    public GameMap(YamlConfiguration config, Plugin plugin) {
+    public GameMap(String mapName, ArtimcPlugin plugin) {
+        this(plugin.getGameConfigurations().get(mapName), plugin);
+    }
+
+    public GameMap(YamlConfiguration config, ArtimcPlugin plugin) {
         this.config = config;
         this.plugin = plugin;
         name = config.getString("name");

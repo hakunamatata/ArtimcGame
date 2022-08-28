@@ -1,7 +1,6 @@
 package plugin.artimc.instance;
 
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.plugin.Plugin;
+import plugin.artimc.ArtimcPlugin;
 import plugin.artimc.engine.GameMap;
 
 import java.util.List;
@@ -35,8 +34,8 @@ public class LogFactoryMap extends GameMap {
     private int baseExperience;
     private int experienceMultiple;
 
-    public LogFactoryMap(YamlConfiguration config, Plugin plugin) {
-        super(config, plugin);
+    public LogFactoryMap(String mapName, ArtimcPlugin plugin) {
+        super(mapName, plugin);
         resourceTimerPeriod = config.getInt("resources.timer.period", 10);
         resourceTimerFreq = config.getInt("resources.timer.freq", 60);
         resourceItems = config.getStringList("resources.items");

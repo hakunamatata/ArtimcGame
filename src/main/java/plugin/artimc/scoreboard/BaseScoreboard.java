@@ -7,16 +7,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scoreboard.Team;
 
-import plugin.artimc.ArtimcGameManager;
-import plugin.artimc.ArtimcGamePlugin;
+import plugin.artimc.ArtimcManager;
+import plugin.artimc.ArtimcPlugin;
 
 public abstract class BaseScoreboard {
 
@@ -51,8 +49,8 @@ public abstract class BaseScoreboard {
         this.scoreboards = scoreboards;
     }
 
-    protected ArtimcGameManager getManager() {
-        return ((ArtimcGamePlugin) plugin).getManager();
+    protected ArtimcManager getManager() {
+        return ((ArtimcPlugin) plugin).getManager();
     }
 
     /**

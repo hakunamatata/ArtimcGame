@@ -1,7 +1,6 @@
 package plugin.artimc.commands.executor.game;
 
 import java.util.List;
-import java.util.Map;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -10,7 +9,6 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 
 import plugin.artimc.commands.context.CommandContext;
-import plugin.artimc.engine.mode.ConfigMode;
 import plugin.artimc.utils.PlayerUtil;
 
 public class SetCommand extends DefaultCommand {

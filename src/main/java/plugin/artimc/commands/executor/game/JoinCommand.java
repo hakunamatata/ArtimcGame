@@ -8,7 +8,8 @@ import plugin.artimc.commands.context.CommandContext;
 import plugin.artimc.engine.Game;
 import plugin.artimc.engine.GameMap;
 import plugin.artimc.engine.GameStatus;
-import plugin.artimc.game.PvPGame;
+import plugin.artimc.engine.world.GameWorld;
+import plugin.artimc.engine.world.WorldStatus;
 import plugin.artimc.instance.LogFactoryGame;
 
 public class JoinCommand extends DefaultCommand {
@@ -47,25 +48,25 @@ public class JoinCommand extends DefaultCommand {
         Game game = null;
         String gameName = tryGetArg(1);
 
-        if (getManager().containesGame(gameName)) {
-            game = getManager().getGame(gameName);
-
+        if (getGameManager().contains(gameName)) {
+            game = (Game) getManager().getGameManager().get(gameName);
+            if (game.getGameWorld().getStatus().equals(WorldStatus.RESET))
+                throw new IllegalStateException(getLocaleString("game.world-is-on-reset"));
         } else {
             GameMap map = new GameMap(getPlugin().getGameConfigurations().get(gameName), getPlugin());
+            GameWorld gameWorld;
             switch (map.getType()) {
                 default:
+                    gameWorld = getWorldManager().get(map.getWorldName());
+                    // 游戏世界正在重置，不允许进入
+                    if (gameWorld != null && gameWorld.getStatus().equals(WorldStatus.RESET))
+                        throw new IllegalStateException(getLocaleString("game.world-is-on-reset"));
+
                     game = new LogFactoryGame(gameName, getPlugin());
             }
         }
-        // 游戏准备阶段加入游戏
-        if (game.getGameStatus() == GameStatus.WAITING)
-            game.addCompanion(player);
-            // 游戏开始之后，加入观察者
-        else if (game.getGameStatus() == GameStatus.GAMING)
-            game.addObserver(player);
-            // 游戏关闭过程中无法进入
-        else if (game.getGameStatus() == GameStatus.CLOSING)
-            throw new IllegalStateException(getLocaleString("game.world-is-on-reset"));
+
+        game.addCompanion(player);
 
         return true;
     }

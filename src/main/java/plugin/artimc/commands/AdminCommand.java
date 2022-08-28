@@ -10,8 +10,8 @@ import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import plugin.artimc.ArtimcGameManager;
-import plugin.artimc.ArtimcGamePlugin;
+import plugin.artimc.ArtimcManager;
+import plugin.artimc.ArtimcPlugin;
 import plugin.artimc.commands.context.AdminCommandContext;
 import plugin.artimc.commands.context.CommandContext;
 
@@ -28,8 +28,8 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
      * 
      * @return
      */
-    protected ArtimcGameManager getManager() {
-        return ((ArtimcGamePlugin) plugin).getManager();
+    protected ArtimcManager getManager() {
+        return ((ArtimcPlugin) plugin).getManager();
     }
 
     @Override

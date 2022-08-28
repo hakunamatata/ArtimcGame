@@ -6,8 +6,8 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 
-import plugin.artimc.ArtimcGameManager;
-import plugin.artimc.ArtimcGamePlugin;
+import plugin.artimc.ArtimcManager;
+import plugin.artimc.ArtimcPlugin;
 import plugin.artimc.commands.executor.CommandExecutor;
 
 public abstract class CommandContext {
@@ -23,25 +23,24 @@ public abstract class CommandContext {
 
     private Plugin plugin;
 
-    public ArtimcGamePlugin getPlugin() {
-        return (ArtimcGamePlugin) plugin;
+    public ArtimcPlugin getPlugin() {
+        return (ArtimcPlugin) plugin;
     }
 
     /**
      * 游戏与队伍管理器
-     * 
+     *
      * @return
      */
-    protected ArtimcGameManager getManager() {
-        return ((ArtimcGamePlugin) plugin).getManager();
+    protected ArtimcManager getManager() {
+        return ((ArtimcPlugin) plugin).getManager();
     }
 
-    protected abstract ConfigurationSection getCommandCofniguration();
+    protected abstract ConfigurationSection getCommandConfiguration();
 
-    protected abstract ConfigurationSection getParameterCofniguration();
+    protected abstract ConfigurationSection getParameterConfiguration();
 
-    protected CommandContext(@NotNull CommandSender sender, @NotNull Command command, String label, String[] args,
-            Plugin plugin) {
+    protected CommandContext(@NotNull CommandSender sender, @NotNull Command command, String label, String[] args, Plugin plugin) {
         this.label = label;
         this.sender = sender;
         this.bukkitCommand = command;

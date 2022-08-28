@@ -16,7 +16,7 @@ public class LeaveCommand extends DefaultCommand {
         if (getGame() == null) {
             getPlayer().sendMessage(getLocaleString("game.ur-not-in-game"));
         } else {
-            getGame().leaveGame(getPlayer());
+            getGame().removeCompanion(getPlayer());
         }
         return false;
     }

@@ -1,4 +1,4 @@
-package plugin.artimc.engine;
+package plugin.artimc.engine.listener;
 
 import plugin.artimc.engine.event.GameItemPickupEvent;
 

@@ -2,20 +2,28 @@ package plugin.artimc.placeholder;
 
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.ChatColor;
+import org.bukkit.Server;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import plugin.artimc.ArtimcGamePlugin;
-import plugin.artimc.engine.Game;
-import plugin.artimc.engine.GameTimer;
+import plugin.artimc.*;
+import plugin.artimc.common.IComponent;
+import plugin.artimc.engine.IGame;
+import plugin.artimc.engine.timer.GameTimer;
 import plugin.artimc.engine.Party;
+import plugin.artimc.engine.timer.TimerManager;
+import plugin.artimc.engine.world.GameWorld;
+import plugin.artimc.engine.world.WorldStatus;
+import plugin.artimc.game.PvPGame;
 import plugin.artimc.utils.StringUtil;
 
-public class GameManagerExpansion extends PlaceholderExpansion {
+import java.util.logging.Logger;
 
-    private final ArtimcGamePlugin plugin;
+public class GameManagerExpansion extends PlaceholderExpansion implements IComponent {
 
-    public GameManagerExpansion(ArtimcGamePlugin plugin) {
+    private final ArtimcPlugin plugin;
+
+    public GameManagerExpansion(ArtimcPlugin plugin) {
         this.plugin = plugin;
     }
 
@@ -39,6 +47,46 @@ public class GameManagerExpansion extends PlaceholderExpansion {
         return true;
     }
 
+    @Override
+    public ArtimcManager getManager() {
+        return plugin.getManager();
+    }
+
+    @Override
+    public GameManager getGameManager() {
+        return getManager().getGameManager();
+    }
+
+    @Override
+    public PlayerGameManager getPlayerGameManager() {
+        return getManager().getPlayerGameManager();
+    }
+
+    @Override
+    public PlayerPartyManager getPlayerPartyManager() {
+        return getManager().getPlayerPartyManager();
+    }
+
+    @Override
+    public PlayerChannelManager getPlayerChannelManager() {
+        return getManager().getPlayerChannelManager();
+    }
+
+    @Override
+    public WorldManager getWorldManager() {
+        return getManager().getWorldManager();
+    }
+
+    @Override
+    public Server getServer() {
+        return getManager().getServer();
+    }
+
+    @Override
+    public Logger getLogger() {
+        return getManager().getLogger();
+    }
+
     /**
      * Placeholder 请求格式
      * %atg_desc_<游戏名称>% ：表示游戏的描述
@@ -56,9 +104,9 @@ public class GameManagerExpansion extends PlaceholderExpansion {
 
         if (params.startsWith("desc_")) {
             String gameName = params.replace("desc_", "");
-            Game game = plugin.getManager().getGame(gameName);
+            IGame game = getGameManager().get(gameName);
             if (game != null) {
-                return game.getGameMap().getDescription();
+                return game.getMap().getDescription();
             }
             return "";
         }
@@ -66,7 +114,7 @@ public class GameManagerExpansion extends PlaceholderExpansion {
         // 返回指定游戏内的在线玩家数
         if (params.startsWith("onlines_")) {
             String gameName = params.replace("onlines_", "");
-            Game game = plugin.getManager().getGame(gameName);
+            IGame game = getGameManager().get(gameName);
             if (game != null) return String.valueOf(game.getOnlinePlayers().size());
             return String.valueOf(0);
         }
@@ -75,46 +123,39 @@ public class GameManagerExpansion extends PlaceholderExpansion {
         if (params.startsWith("status_")) {
             String gameName = params.replace("status_", "");
             String status = "";
-            Game game = plugin.getManager().getGame(gameName);
-            if (game == null) status = "&7N/A";
-            else {
-                switch (game.getGameStatus()) {
-                    case WAITING:
-                        status = "&e等待中";
-                        break;
-                    case GAMING:
-                        status = "&a进行中";
-                        break;
-                    case FINISH:
-                        status = "&9结算中";
-                        break;
-                    case CLOSING:
-                        status = "&c关闭中";
-                        break;
-                    default:
-                        status = "&7已关闭";
-                }
+            String mapName = plugin.getGameConfigurations().get(gameName).getString("world-name");
+            GameWorld world = plugin.getManager().getWorldManager().get(mapName);
+
+            if (world != null && world.getStatus().equals(WorldStatus.RESET)) return "&c正在重置地形";
+
+            IGame game = getGameManager().get(gameName);
+            if (game == null) status = "&7已关闭";
+            else if (game.isWaiting()) {
+                status = "&e等待中";
+            } else if (game.isGaming()) {
+                status = "&a进行中";
+            } else if (game.isFinish()) {
+                status = "&9结算中";
+            } else if (game.isClosing()) {
+                status = "&9正在关闭";
             }
             return ChatColor.translateAlternateColorCodes('&', status);
         }
         // 返回指定游戏当前状态的剩余时间
         if (params.startsWith("timeleft_")) {
             String gameName = params.replace("timeleft_", "");
-            String timeLeft = "";
-            Game game = plugin.getManager().getGame(gameName);
+            IGame game = getGameManager().get(gameName);
             if (game == null) return "N/A";
             GameTimer timer = null;
-            switch (game.getGameStatus()) {
-                case WAITING:
-                    timer = game.getTimerManager().get(Game.WAIT_PERIOD_TIMER_NAME);
-                    break;
-                case GAMING:
-                    timer = game.getTimerManager().get(Game.GAME_PERIOD_TIMER_NAME);
-                    break;
-                case FINISH:
-                    timer = game.getTimerManager().get(Game.FINISH_PERIOD_TIMER_NAME);
-                    break;
+
+            if (game.isWaiting()) {
+                timer = game.getTimerManager().get(TimerManager.WAIT_PERIOD_TIMER);
+            } else if (game.isGaming()) {
+                timer = game.getTimerManager().get(TimerManager.GAME_PERIOD_TIMER);
+            } else if (game.isFinish()) {
+                timer = game.getTimerManager().get(TimerManager.FINISH_PERIOD_TIMER);
             }
+
             if (timer != null) return StringUtil.formatTime(timer.getCurrent());
         }
 
@@ -122,16 +163,19 @@ public class GameManagerExpansion extends PlaceholderExpansion {
         if (params.startsWith("players_")) {
             String gameName = params.replace("players_", "");
             String playerNames = "";
-            Game game = plugin.getManager().getGame(gameName);
+            IGame game = getGameManager().get(gameName);
             if (game == null) return "";
-            for (Party party : game.getGameParties().values()) {
-                String partyColor = ChatColor.WHITE + "";
-                if (party != null && party.getPartyName() != null) partyColor = party.getPartyName().toString();
-                for (Player pp : party.getOnlinePlayers()) {
-                    playerNames += partyColor + pp.getName() + ";";
+            if (game instanceof PvPGame) {
+                PvPGame pvp = (PvPGame) game;
+                for (Party party : pvp.getGameParties().values()) {
+                    String partyColor = ChatColor.WHITE + "";
+                    if (party != null && party.getPartyName() != null) partyColor = party.getPartyName().toString();
+                    for (Player pp : party.getOnlinePlayers()) {
+                        playerNames += partyColor + pp.getName() + ";";
+                    }
                 }
+                return playerNames;
             }
-            return playerNames;
         }
 
 

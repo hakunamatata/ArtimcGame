@@ -7,20 +7,17 @@ import org.bukkit.World;
 import org.bukkit.boss.BarColor;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.plugin.Plugin;
-import plugin.artimc.ArtimcGamePlugin;
-import plugin.artimc.engine.GameFinishReason;
-import plugin.artimc.engine.GameStatus;
-import plugin.artimc.engine.GameTimer;
+import plugin.artimc.ArtimcPlugin;
+import plugin.artimc.engine.FinishReason;
+import plugin.artimc.engine.timer.GameTimer;
 import plugin.artimc.engine.Party;
 import plugin.artimc.engine.event.GameItemPickupEvent;
+import plugin.artimc.engine.timer.custom.ResourceDropTimer;
 import plugin.artimc.game.PvPGame;
 import plugin.artimc.utils.Utils;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 
 /**
  * LogFactoryGame
@@ -33,26 +30,28 @@ public class LogFactoryGame extends PvPGame {
     private int resPeriod;
     private int resFreq;
     private List<String> items;
-    private LogFactoryMap map;
-
     private int scoreMultipler;
 
-    public LogFactoryGame(String pvpGameName, Plugin plugin) {
+    public LogFactoryGame(String pvpGameName, ArtimcPlugin plugin) {
         super(pvpGameName, plugin);
     }
 
     @Override
     protected void onInitialization() {
-        final ArtimcGamePlugin agp = getPlugin();
-        map = new LogFactoryMap(agp.getGameConfigurations().get(getGameName()), getPlugin());
-        items = map.getResourceItems();
-        resPeriod = map.getResourceTimerPeriod();
-        resFreq = map.getResourceTimerFreq();
+        setGameMap(new LogFactoryMap(getGameName(), getPlugin()));
+        items = getGameMap().getResourceItems();
+        resPeriod = getGameMap().getResourceTimerPeriod();
+        resFreq = getGameMap().getResourceTimerFreq();
         scoreMultipler = 1;
         super.onInitialization();
     }
 
-    private void dropItems() {
+    @Override
+    public LogFactoryMap getGameMap() {
+        return (LogFactoryMap) super.getGameMap();
+    }
+
+    public void dropItems() {
         Material material;
         World world;
         Location loc;
@@ -71,12 +70,13 @@ public class LogFactoryGame extends PvPGame {
                 String mn = Utils.getRandomElement(Arrays.stream(mats.split(",")).toList());
                 material = Material.valueOf(mn.split(":")[0].toUpperCase());
                 amount = Integer.valueOf(mn.split(":")[1]);
-                world = getPlugin().getServer().getWorld(map.getWorldName());
+                world = getPlugin().getServer().getWorld(getGameMap().getWorldName());
                 loc = new Location(world, Integer.valueOf(lots.split(",")[0]), Integer.valueOf(lots.split(",")[1]), Integer.valueOf(lots.split(",")[2]));
 
                 dropItem(new ItemStack(material, amount), loc).setItemMeta("extra-score", extra * scoreMultipler);
-                //world.dropItem(loc, new ItemStack(material, amount));
                 log(String.format("资源已生成：%s:%s, 地点：%s, %s %s %s", material, amount, world.getName(), loc.getX(), loc.getY(), loc.getZ()));
+                scoreMultipler *= 2;
+
             }
         } catch (Exception ex) {
             getPlugin().getLogger().warning(ex.getMessage());
@@ -85,53 +85,18 @@ public class LogFactoryGame extends PvPGame {
 
 
     @Override
-    protected void onGameTimerUpdate(GameTimer timer) {
-
+    public void onGamePeriodUpdate(GameTimer timer) {
+        super.onGamePeriodUpdate(timer);
         // 每分钟新建一个计时器，生成资源
-        if (getGamingLifeTime() > 30 && getGamingLifeTime() % resFreq == 0) {
-            // 10秒倒计时，标题提醒，资源即将生成
-            new GameTimer("resource-drop", resPeriod, this) {
-                @Override
-                protected void onStart() {
-                    // 隐藏默认标题
-                    if (getGameStatus() == GameStatus.GAMING) {
-                        setEnableStatusBar(false);
-                    }
-                    super.onStart();
-                }
-
-                @Override
-                protected void onUpdate() {
-                    // 设置资源倒计时
-                    getStatusBar().setTitle("§6§l资源即将刷新");
-                    getStatusBar().setColor(BarColor.BLUE);
-                    getStatusBar().setProgress((double) this.getCurrent() / (double) this.getPeriod());
-                    super.onUpdate();
-                }
-
-                @Override
-                protected void onFinish() {
-                    // 生成资源
-                    if (getGameStatus() == GameStatus.GAMING) {
-                        setEnableStatusBar(true);
-                        dropItems();
-                        scoreMultipler *= 2;
-                    }
-                    super.onFinish();
-                }
-            }.start();
+        if (isGaming() && getGamePassedTime() > 10 && getGameLeftTime() % resFreq == 0 && getGameLeftTime() > 0) {
+            getTimerManager().startTimer(new ResourceDropTimer(resPeriod, "§6§l资源即将刷新", BarColor.BLUE, this));
         }
-
-        if (isEnableStatusBar()) super.onGameTimerUpdate(timer);
     }
 
     @Override
-    protected void onGameFinish(GameFinishReason reason) {
-        if (reason == GameFinishReason.GAMING_TIMEOUT) {
+    protected void onGameFinish(FinishReason reason) {
+        if (reason == FinishReason.GAMING_TIMEOUT) {
             giveExperienceReward();
-        }
-        if (getTimerManager().get("resource-drop") != null) {
-            getTimerManager().get("resource-drop").close();
         }
         super.onGameFinish(reason);
     }
@@ -142,16 +107,15 @@ public class LogFactoryGame extends PvPGame {
      */
     private void giveExperienceReward() {
         int players = getOnlinePlayersExceptObserver().size();
-        int baseExp = map.getBaseExperience();
-        int winnerExp = map.getWinnerExperience();
+        int baseExp = getGameMap().getBaseExperience();
+        int winnerExp = getGameMap().getWinnerExperience();
         // 经验值 * 玩家数量 / 2
         if (!getWinners().isEmpty()) {
             for (Party p : getWinners()) {
                 for (Player player : p.getOnlinePlayers()) {
                     int exp = winnerExp * players / 2;
                     player.giveExp(exp);
-                    player.sendMessage(getGameLocaleString("experience-acquired")
-                            .replace("%exp%", String.valueOf(exp)));
+                    player.sendMessage(getGameLocaleString("experience-acquired").replace("%exp%", String.valueOf(exp)));
                 }
             }
         }
@@ -160,8 +124,7 @@ public class LogFactoryGame extends PvPGame {
                 for (Player player : p.getOnlinePlayers()) {
                     int exp = baseExp * players / 2;
                     player.giveExp(exp);
-                    player.sendMessage(getGameLocaleString("experience-acquired")
-                            .replace("%exp%", String.valueOf(exp)));
+                    player.sendMessage(getGameLocaleString("experience-acquired").replace("%exp%", String.valueOf(exp)));
                 }
             }
         }
@@ -174,10 +137,8 @@ public class LogFactoryGame extends PvPGame {
         if (!getObserveParty().contains(event.getPlayer())) {
             int score = (int) event.getItem().getItemMeta("extra-score");
             Party party = getManager().getPlayerParty(event.getPlayer());
-            getPvPStatstic().addPartyScore(party, score);
-            String message = ChatColor.translateAlternateColorCodes('&', getGameMap().getConfig().getString("translate.item-pickup")
-                    .replace("%party_name%", party.getName())
-                    .replace("%score%", String.valueOf(score)));
+            getPvPSStatistic().addPartyScore(party, score);
+            String message = ChatColor.translateAlternateColorCodes('&', getGameMap().getConfig().getString("translate.item-pickup").replace("%party_name%", party.getName()).replace("%score%", String.valueOf(score)));
             sendMessage(message);
         } else {
             event.setCancel(true);

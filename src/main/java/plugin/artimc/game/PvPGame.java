@@ -4,22 +4,26 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
+import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.boss.BarColor;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.*;
-import org.bukkit.plugin.Plugin;
 
 import org.jetbrains.annotations.NotNull;
+import plugin.artimc.ArtimcPlugin;
 import plugin.artimc.engine.*;
 import plugin.artimc.engine.event.GameItemPickupEvent;
-import plugin.artimc.engine.item.GameItem;
+import plugin.artimc.engine.event.PartyJoinGameEvent;
+import plugin.artimc.engine.event.PartyLeaveGameEvent;
+import plugin.artimc.engine.event.PlayerLeaveGameEvent;
+import plugin.artimc.engine.mechanism.PreventGrieving;
+import plugin.artimc.engine.timer.GameTimer;
+import plugin.artimc.engine.timer.effect.PvPGameInvincibleEffect;
 import plugin.artimc.scoreboard.GameScoreboard;
 import plugin.artimc.utils.StringUtil;
 
@@ -36,8 +40,12 @@ public class PvPGame extends Game {
     private PvPItemControl pvpItemController;
     private String gameMode;
 
-    public PvPGame(String pvpGameName, Plugin plugin) {
+    public PvPGame(String pvpGameName, ArtimcPlugin plugin) {
         super(pvpGameName, plugin);
+        // 使用队伍命名牌显示策略
+        setNameTagManager(new PartyNameTagManager(this));
+        // 开启防盗模式
+        useMechanisms(new PreventGrieving(this));
     }
 
     @Override
@@ -64,51 +72,13 @@ public class PvPGame extends Game {
     }
 
     /**
-     * 算了，不发了
-     * 玩家不同意，可以退出游戏
-     * --------------------
-     * 给玩家发送变更队伍的要求
-     * 玩家接受之后，改变玩家的队伍
-     *
-     * @param player
-     */
-    public void movePlayerRequest(Player player) {
-        //player.sendMessage();
-    }
-
-    /**
      * 将玩家移动到指定队伍
      *
      * @param player
      * @param party
      */
     public void movePlayer(@NotNull Player player, Party party) {
-
-        if (party == null || party.contains(player))
-            throw new IllegalStateException(getGameLocaleString("move-err-custom"));
-
-        final int maxMembers = getGameMap().getMaxMembers();
-        if (!getObserveParty().equals(party) && party.size() >= maxMembers)
-            throw new IllegalStateException(getGameLocaleString("party-members-overload").replace("%limit%", String.valueOf(maxMembers)));
-
-        Party playerParty = getManager().getPlayerParty(player);
-        // 将玩家队伍设置为新的队伍
-        // 更新玩家的计分板
-        playerParty.removeSilent(player);
-        party.addSilent(player);
-        getManager().setPlayerParty(player, party);
-
-        // 如果将玩家移动到观察者队伍
-        if (getObserveParty().equals(party)) {
-            setPlayerAsObserver(player);
-        }
-        // 移动到非观察者队伍
-        else {
-            playerParty.updateScoreboard();
-            resetPlayer(player);
-        }
-        party.updateScoreboard();
-        player.sendMessage(getGameLocaleString("move-success").replace("%party_name%", party.getName()));
+        getCompanion().movePlayer(player, party);
     }
 
     @Override
@@ -121,36 +91,26 @@ public class PvPGame extends Game {
         if (isGaming() && pvpItemController != null) {
             pvpItemController.replaceItems();
         }
-//        // debug shit
-//        for (GameTimer timer : getTimerManager().values()) {
-//            if (timer instanceof GameBuffEffect) {
-//                log(String.format("------- timer: %s --------", ((GameBuffEffect) timer).getBuffName()));
-//                log(String.format(" Player: %s, period: %s, current: %s", ((GameBuffEffect) timer).getPlayer().getName(), timer.getPeriod(), timer.getCurrent()));
-//            }
-//        }
         super.onFixedUpdate();
     }
 
 
     private void clearDropItemsOnUnifiedMode() {
         if (pvpItemController != null && pvpItemController.isUnifiedInventory()) {
-            List<Entity> list = getGameMap().getWorld().getEntities();
-            for (Entity current : list) {
-                if (current instanceof Item) {
-                    current.remove();
-                }
-            }
+
         }
     }
 
     @Override
-    protected void onGameFinish(GameFinishReason reason) {
+    protected void onGameFinish(FinishReason reason) {
+        super.onGameFinish(reason);
+
         // 结束后恢复玩家的物品
         if (pvpItemController != null) {
             pvpItemController.recoverItems();
         }
         // 对方队伍成员均离线
-        if (reason == GameFinishReason.MISSING_COMPANION) {
+        if (reason == FinishReason.MISSING_COMPANION) {
             Party party = null;
             if (getHostParty() != null && getHostParty().getOnlinePlayers().isEmpty()) party = getHostParty();
             else if (getGuestParty() != null && getGuestParty().getOnlinePlayers().isEmpty()) party = getGuestParty();
@@ -158,26 +118,27 @@ public class PvPGame extends Game {
                 sendMessage(getLocaleString("game.game-finish-reason-missing-companion", false).replace("%party_name%", party.getName()));
         }
         // 比赛时间结束
-        else if (reason == GameFinishReason.GAMING_TIMEOUT) {
+        else if (reason == FinishReason.GAMING_TIMEOUT) {
             for (Party party : this.getGameParties().values()) {
                 // 队内广播，队伍数据
-                sendMessage(getPvPStatstic().getPartySummary(party));
+                sendMessage(getPvPSStatistic().getPartySummary(party));
                 for (Player player : party.getOnlinePlayers()) {
                     // 向玩家发送玩家数据
-                    player.sendMessage(getPvPStatstic().getPlayerSummary(player));
+                    player.sendMessage(getPvPSStatistic().getPlayerSummary(player));
                 }
             }
         }
 
         for (Party party : getWinners()) {
             party.showTitle(this.getGameMap().getWinTitle(), this.getGameMap().getWinSubTitle());
+            party.sendMessage(ChatColor.GREEN + this.getGameMap().getWinTitle());
         }
 
         for (Party party : getLosers()) {
             party.showTitle(this.getGameMap().getLooseTitle(), this.getGameMap().getLooseSubTitle());
+            party.sendMessage(ChatColor.GREEN + this.getGameMap().getLooseTitle());
         }
 
-        super.onGameFinish(reason);
     }
 
     /**
@@ -198,7 +159,7 @@ public class PvPGame extends Game {
         return false;
     }
 
-    public PvPStatstic getPvPStatstic() {
+    public PvPStatstic getPvPSStatistic() {
         return pvpStatstic;
     }
 
@@ -265,7 +226,8 @@ public class PvPGame extends Game {
     }
 
     @Override
-    protected void onPartyJoinGame(Party party) {
+    public void onPartyJoinGame(PartyJoinGameEvent event) {
+        Party party = event.getParty();
         if (getGameParties().size() == 1) {
             hostPartyName = party.getPartyName();
         } else if (getGameParties().size() == 2) {
@@ -281,35 +243,40 @@ public class PvPGame extends Game {
             party.getOwner().sendMessage(getGameLocaleString("ur-party-is-guest"));
         }
 
-        super.onPartyJoinGame(party);
+        super.onPartyJoinGame(event);
     }
+
 
     /**
      * 队伍离开
      *
-     * @param party
+     * @param event
      */
     @Override
-    protected void onPartyLeave(Party party) {
+    public void onPartyLeaveGame(PartyLeaveGameEvent event) {
         if (getGameParties().size() == 1) {
             // 将当前仅剩的队伍设为主队
             hostPartyName = ((Party) getGameParties().values().toArray()[0]).getPartyName();
             guestPartyName = null;
         }
-        super.onPartyLeave(party);
+        super.onPartyLeaveGame(event);
     }
 
+
     @Override
-    protected void onPlayerLeaveGame(Player player) {
-        // 初始化玩家状态
-        player.setGlowing(false);
-        player.setHealthScaled(false);
-        player.setHealth(player.getMaxHealth());
-        player.setFoodLevel(20);
-        if (pvpItemController != null) {
-            pvpItemController.recoverItemForPlayer(player);
+    public void onPlayerLeaveGame(PlayerLeaveGameEvent event) {
+        if (event.getPlayer().isOnline()) {
+            Player player = (Player) event.getPlayer();
+            // 初始化玩家状态
+            player.setGlowing(false);
+            player.setHealthScaled(false);
+            player.setHealth(player.getMaxHealth());
+            player.setFoodLevel(20);
+            if (pvpItemController != null) {
+                pvpItemController.recoverItemForPlayer(player);
+            }
         }
-        super.onPlayerLeaveGame(player);
+        super.onPlayerLeaveGame(event);
     }
 
 
@@ -356,11 +323,10 @@ public class PvPGame extends Game {
      * 游戏结束原因
      */
     @Override
-    protected GameFinishReason willGameFinish() {
+    protected FinishReason willGameFinish() {
         // 如果游戏过程中，中途任意一支队伍玩家数量为 0 ，比赛终止
-        if ((this.isGaming() || getGameStatus() == GameStatus.FINISH) && (getHostParty() == null || getHostParty().getOnlinePlayers().isEmpty() || getGuestParty() == null || getGuestParty().getOnlinePlayers().isEmpty())) {
-            this.setFinishReason(GameFinishReason.MISSING_COMPANION);
-        }
+        if ((Party.isEmpty(getHostParty()) || Party.isEmpty(getGuestParty())) && isGaming())
+            return FinishReason.MISSING_COMPANION;
 
         return super.willGameFinish();
     }
@@ -384,9 +350,10 @@ public class PvPGame extends Game {
         return super.willPlayerTakesDamage(player, damager);
     }
 
+
     @Override
-    protected void onGameTimerUpdate(GameTimer timer) {
-        if (timer.getName().equals(Game.WAIT_PERIOD_TIMER_NAME)) {
+    public void onWaitPeriodUpdate(GameTimer timer) {
+        if (getStatusBar().isSyncDefaultStatusBar()) {
             if (getGameParties().size() == 1) {
                 getStatusBar().setTitle(getGameLocaleString("status-title-waiting-party", false));
                 getStatusBar().setColor(BarColor.RED);
@@ -394,8 +361,14 @@ public class PvPGame extends Game {
                 getStatusBar().setTitle(getGameLocaleString("status-title-waiting-ready", false));
                 getStatusBar().setColor(BarColor.YELLOW);
             }
-        } else if (timer.getName().equals(Game.GAME_PERIOD_TIMER_NAME)) {
-            if (timer.getPeriod() - timer.getCurrent() < 5) {
+        }
+        super.onWaitPeriodUpdate(timer);
+    }
+
+    @Override
+    public void onGamePeriodUpdate(GameTimer timer) {
+        if (getStatusBar().isSyncDefaultStatusBar()) {
+            if (timer.getPassedTime() < 5) {
                 getStatusBar().setColor(BarColor.GREEN);
                 getStatusBar().setTitle(getGameLocaleString("status-title-gaming", false));
             } else if (timer.getCurrent() > (timer.getPeriod() / 2)) {
@@ -411,15 +384,20 @@ public class PvPGame extends Game {
                 getStatusBar().setColor(BarColor.RED);
                 getStatusBar().setTitle("§4§l" + getGameLocaleString("status-title-time-left", false).replace("%time%", StringUtil.formatTime(timer.getCurrent())));
             }
-            // 清理物品
-            if (getGameLeftTick() == 9) {
-                clearDropItemsOnUnifiedMode();
-            }
-        } else if (timer.getName().equals(Game.FINISH_PERIOD_TIMER_NAME)) {
-            getStatusBar().setTitle(getGameLocaleString("status-title-game-finsih", false));
+        }
+
+        super.onGamePeriodUpdate(timer);
+    }
+
+    @Override
+    public void onFinishPeriodUpdate(GameTimer timer) {
+        if (getStatusBar().isSyncDefaultStatusBar()) {
+            getStatusBar().setTitle(getGameLocaleString("status-title-game-finish", false));
             getStatusBar().setColor(BarColor.BLUE);
         }
+        super.onFinishPeriodUpdate(timer);
     }
+
 
     @Override
     public Party inSpawnProtection(Player player) {
@@ -440,51 +418,16 @@ public class PvPGame extends Game {
         return super.inSpawnProtection(player);
     }
 
-    /**
-     * 给玩家一个短时间的无敌与发光效果
-     *
-     * @param player 玩家
-     * @param period 持续时间
-     */
-    private void givePlayerInvincibleBuffEffect(Player player, int period) {
-        /**
-         * 需要测试，退出，销毁之后，是否还具有这种效果
-         */
-        new GameBuffEffect("respawn-invincible", player, period, this) {
-            @Override
-            protected void onFinish() {
-                // onFinish
-                getGame().setPlayerInvincible(getPlayer(), false);
-                getPlayer().setGlowing(false);
-                log(String.format("%s 被解除了 无敌 效果", player.getName(), getPeriod()));
-                super.onFinish();
-            }
-
-            @Override
-            protected void onStart() {
-                getGame().setPlayerInvincible(getPlayer(), true);
-                getPlayer().setGlowing(true);
-                log(String.format("%s 被赋予了 %s 秒 无敌 效果", player.getName(), getPeriod()));
-                super.onStart();
-            }
-
-            @Override
-            protected void onUpdate() {
-                super.onUpdate();
-            }
-        }.start();
-    }
-
     @Override
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         int period = getGameMap().getInvinciblePeriod();
         Player player = event.getPlayer();
         if (getHostParty().contains(player)) {
             event.setRespawnLocation(getGameMap().getSpawn().get("host"));
-            givePlayerInvincibleBuffEffect(player, period);
+            givePlayerEffect(new PvPGameInvincibleEffect(player, period, this));
         } else if (getGuestParty().contains(player)) {
             event.setRespawnLocation(getGameMap().getSpawn().get("guest"));
-            givePlayerInvincibleBuffEffect(player, period);
+            givePlayerEffect(new PvPGameInvincibleEffect(player, period, this));
         } else event.setRespawnLocation(getGameMap().getSpawn().get("default"));
         super.onPlayerRespawn(event);
     }
@@ -530,7 +473,7 @@ public class PvPGame extends Game {
         Party party = getManager().getPlayerParty(player);
         // 但是玩家的队伍已经不存在了，结束游戏
         if (party == null) {
-            leaveGame(player);
+            removeCompanion(player);
             player.teleport(getGameMap().getLobby());
             player.setBedSpawnLocation(getGameMap().getLobby(), true);
             player.setGameMode(GameMode.SURVIVAL);
@@ -608,8 +551,7 @@ public class PvPGame extends Game {
     public void onPlayerDropItem(PlayerDropItemEvent event) {
         // 游戏已结束，或者游戏时间还剩60秒
         // 玩家无法丢弃物品
-        if (pvpItemController != null && pvpItemController.isUnifiedInventory()
-                && (getGameStatus() == GameStatus.FINISH || (getGameStatus() == GameStatus.GAMING && getGameLeftTick() <= 10))) {
+        if (pvpItemController != null && pvpItemController.isUnifiedInventory() && (getGameStatus() == GameStatus.FINISH || (getGameStatus() == GameStatus.GAMING && getGameLeftTime() <= 10))) {
             event.setCancelled(false);
         }
         super.onPlayerDropItem(event);

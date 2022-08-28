@@ -19,18 +19,19 @@ import org.bukkit.plugin.java.JavaPlugin;
 import plugin.artimc.commands.AdminCommand;
 import plugin.artimc.commands.GameCommand;
 import plugin.artimc.commands.PartyCommand;
+import plugin.artimc.commands.PartyMessageCommand;
 import plugin.artimc.placeholder.GameManagerExpansion;
 
-public final class ArtimcGamePlugin extends JavaPlugin {
+public final class ArtimcPlugin extends JavaPlugin {
 
-    private ArtimcGameManager manager;
+    private ArtimcManager manager;
     private final Map<String, YamlConfiguration> gameConfigurations = new HashMap<>();
     private final Map<String, String> gameConfigPathes = new HashMap<>();
     private YamlConfiguration languageConfiguration;
     private MultiverseCore multiverseCore = null;
     private WorldEditPlugin worldEditPlugin = null;
 
-    private HologramsAPI hologramsAPI = null;
+    private final HologramsAPI hologramsAPI = null;
 
     @Override
     public void onEnable() {
@@ -39,12 +40,13 @@ public final class ArtimcGamePlugin extends JavaPlugin {
         saveResource("games/test.yml", false);
         saveResource("language.yml", true);
         loadConfigurations();
-        this.manager = new ArtimcGameManager(this);
+        this.manager = new ArtimcManager(this);
         // 设置退出队伍聊天的指令
         this.getServer().getPluginManager().registerEvents(this.manager, this);
         this.getCommand("party").setExecutor(new PartyCommand(this));
         this.getCommand("game").setExecutor(new GameCommand(this));
-        this.getCommand("artimcadmin").setExecutor(new AdminCommand(this));
+        this.getCommand("aa").setExecutor(new AdminCommand(this));
+        this.getCommand("pm").setExecutor(new PartyMessageCommand(this));
 
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             getLogger().info("============== Artimc Game Placeholder Enabled ==============");
@@ -56,8 +58,7 @@ public final class ArtimcGamePlugin extends JavaPlugin {
             getLogger().info("============== Artimc Game Placeholder Disabled ==============");
         }
 
-        if (Bukkit.getPluginManager().isPluginEnabled("Multiverse-Core")
-                && Bukkit.getPluginManager().isPluginEnabled("FastAsyncWorldEdit")) {
+        if (Bukkit.getPluginManager().isPluginEnabled("Multiverse-Core") && Bukkit.getPluginManager().isPluginEnabled("FastAsyncWorldEdit")) {
             multiverseCore = (MultiverseCore) Bukkit.getPluginManager().getPlugin("Multiverse-Core");
             worldEditPlugin = (WorldEditPlugin) Bukkit.getPluginManager().getPlugin("FastAsyncWorldEdit");
             getLogger().info("============== World Duplication Enabled ==============");
@@ -90,7 +91,7 @@ public final class ArtimcGamePlugin extends JavaPlugin {
      *
      * @return
      */
-    public ArtimcGameManager getManager() {
+    public ArtimcManager getManager() {
         return manager;
     }
 
@@ -153,9 +154,7 @@ public final class ArtimcGamePlugin extends JavaPlugin {
         if (languageConfiguration != null && languageConfiguration.getString(path) != null) {
             String prefix = languageConfiguration.getString("prefix");
             String message = languageConfiguration.getString(path);
-            if (prefixed)
-                return ChatColor.translateAlternateColorCodes('&',
-                        prefix + message);
+            if (prefixed) return ChatColor.translateAlternateColorCodes('&', prefix + message);
             return ChatColor.translateAlternateColorCodes('&', message);
         }
         return "";
@@ -169,8 +168,7 @@ public final class ArtimcGamePlugin extends JavaPlugin {
      * 加载游戏目录中的所有游戏：/games/*.yml
      */
     private void loadConfigurations() {
-        languageConfiguration = YamlConfiguration
-                .loadConfiguration(new File(getDataFolder(), "language.yml"));
+        languageConfiguration = YamlConfiguration.loadConfiguration(new File(getDataFolder(), "language.yml"));
         File gamesFolder = new File(getDataFolder(), "games");
         if (gamesFolder.isDirectory()) {
             File[] gameFiles = gamesFolder.listFiles();
@@ -180,8 +178,7 @@ public final class ArtimcGamePlugin extends JavaPlugin {
                     gameYml = YamlConfiguration.loadConfiguration(f);
                     if (!gameYml.getString("name").isEmpty() && gameYml.getBoolean("active")) {
                         gameConfigurations.put(gameYml.getString("name"), gameYml);
-                        gameConfigPathes.put(gameYml.getString("name"),
-                                Path.of(gamesFolder.getPath(), f.getName()).toString());
+                        gameConfigPathes.put(gameYml.getString("name"), Path.of(gamesFolder.getPath(), f.getName()).toString());
                     }
                 }
             }

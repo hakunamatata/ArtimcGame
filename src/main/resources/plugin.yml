@@ -1,6 +1,6 @@
 name: Artimc
 version: "${project.version}"
-main: plugin.artimc.ArtimcGamePlugin
+main: plugin.artimc.ArtimcPlugin
 api-version: 1.18
 softdepend:
   - ProtocolLib
@@ -26,5 +26,7 @@ commands:
     aliases: [ 队伍 ]
   game:
     aliases: [ 游戏 ]
-  artimcadmin:
+  aa:
     aliases: [ aa ]
+  pm:
+    aliases: [ pm ]

@@ -2,8 +2,6 @@ package plugin.artimc.engine;
 
 import java.lang.reflect.Constructor;
 import java.util.Collections;
-import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -11,95 +9,69 @@ import java.util.UUID;
 
 import org.bukkit.*;
 import org.bukkit.block.Block;
-import org.bukkit.boss.BarColor;
-import org.bukkit.boss.BarStyle;
-import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.player.*;
 import org.bukkit.event.block.*;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.potion.PotionEffect;
-import org.bukkit.scheduler.BukkitRunnable;
 
-import plugin.artimc.ArtimcGameManager;
-import plugin.artimc.ArtimcGamePlugin;
-import plugin.artimc.engine.event.GameItemPickupEvent;
+import plugin.artimc.ArtimcPlugin;
+import plugin.artimc.PlayerGameManager;
+import plugin.artimc.PlayerPartyManager;
+import plugin.artimc.WorldManager;
+import plugin.artimc.engine.event.*;
 import plugin.artimc.engine.item.GameItem;
+import plugin.artimc.engine.listener.IGameListener;
+import plugin.artimc.engine.mechanism.PlayerRespawn;
+import plugin.artimc.engine.timer.GameTimer;
+import plugin.artimc.engine.world.GameWorld;
+import plugin.artimc.engine.world.WorldStatus;
 import plugin.artimc.scoreboard.BaseScoreboard;
 import plugin.artimc.scoreboard.GameScoreboard;
 import plugin.artimc.scoreboard.PartyScoreboard;
 
 /**
- * 描述：BaseGame，游戏实体
+ * 描述：Game，游戏
  * 处理游戏中的玩家、计分板、游戏事件处理
  * 处理游戏的底层运行，时间刻等
  * 作者：Leo
  * 创建时间：2022/7/29 20:40
  */
-public abstract class Game extends BukkitRunnable implements IGameListener, AutoCloseable {
-    public static final String WAIT_PERIOD_TIMER_NAME = "WAITING_PERIOD_TIMER";
-    public static final String GAME_PERIOD_TIMER_NAME = "GAMING_PERIOD_TIMER";
-    public static final String FINISH_PERIOD_TIMER_NAME = "FINISH_PERIOD_TIMER";
-    private static final String defaultTextOfStatusBar = "当前状态";
-    private final Plugin plugin;
-    private final String gameName;
-    private final HashSet<UUID> players;
-    private BossBar statusBar;
-    private int currentTick = 0;
-    private GameStatus gameStatus;
-    private boolean enableStatusBar = true;
-    private final Map<String, GameTimer> timerManager;
-    private GameFinishReason finishReason = null;
-    private final Party observeParty;
-    private final Map<PartyName, Party> gameParties;
+public abstract class Game extends GameRunnable implements IGameListener {
     private final Set<Party> winners;
     private final Set<Party> losers;
-    private final Set<PartyName> partyNames;
     private boolean friendlyFire = false;
-    private boolean isRunning = false;
-    private boolean isClosing = false;
-    private GameWorld world;
-    private int gameStartAt = -1;
-    private int gameFinishAt = 999999999;
-    private int gameLeftTick = -1;
-    // 玩家的Buff效果
-    private final Set<UUID> invinciblePlayers;
     private Set<GameItem> gameItems;
+    private Companion companion;
 
-    protected Game(final String gameName, final Plugin plugin) {
-        this.gameName = gameName;
-        this.plugin = plugin;
-        this.players = new HashSet<>();
-        this.timerManager = new HashMap<>();
-        partyNames = Set.of(PartyName.RED, PartyName.ORANGE, PartyName.YELLOW, PartyName.GREEN, PartyName.LIME, PartyName.BLUE, PartyName.PURPLE);
-        gameParties = new EnumMap<>(PartyName.class);
-        observeParty = new Party(this, plugin);
-        observeParty.setCustomName(getGameLocaleString("observe-party-name"));
-        winners = new HashSet<>();
-        losers = new HashSet<>();
-        invinciblePlayers = new HashSet<>();
-        gameItems = new HashSet<>();
-        // 组件初始化
-        onInitialization();
-        world = new GameWorld(this);
-        statusBar = Bukkit.createBossBar(defaultTextOfStatusBar, BarColor.RED, BarStyle.SOLID);
-        statusBar.setTitle(defaultTextOfStatusBar);
-        statusBar.setVisible(true);
-        if (!world.exist()) {
-            world.reset();
-        }
-        // 游戏帧开始流动
-        startTick();
+    protected Game(String gameName, ArtimcPlugin plugin) {
+        super(gameName, plugin);
+        this.companion = new Companion(this);
+        this.winners = new HashSet<>();
+        this.losers = new HashSet<>();
+        this.gameItems = new HashSet<>();
+        useMechanisms(
+                // 玩家复活 5秒内 无法移动
+                new PlayerRespawn(this));
     }
 
-    protected void log(String message) {
-        boolean debug = plugin.getConfig().getBoolean("debug", false);
-        if (!debug) return;
-        String prefix = String.format("[%s]: ", getGameName());
-        getPlugin().getLogger().info(prefix + message);
+    /**
+     * 获取游戏地图
+     *
+     * @return
+     */
+    public GameMap getGameMap() {
+        return gameMap;
+    }
+
+    protected void setGameMap(GameMap gameMap) {
+        this.gameMap = gameMap;
+    }
+
+    public String getWorldName() {
+        return getGameMap().getWorldName();
     }
 
     public boolean isFriendlyFire() {
@@ -110,12 +82,19 @@ public abstract class Game extends BukkitRunnable implements IGameListener, Auto
         this.friendlyFire = friendlyFire;
     }
 
-    public boolean isGaming() {
-        return gameStatus == GameStatus.GAMING;
+    @Override
+    public int getWaitingPeriod() {
+        return getGameMap().getWaitPeriod();
     }
 
-    public boolean isRunning() {
-        return isRunning;
+    @Override
+    public int getGamingPeriod() {
+        return getGameMap().getGamePeriod();
+    }
+
+    @Override
+    public int getFinishPeriod() {
+        return getGameMap().getFinishPeriod();
     }
 
     public Set<Party> getWinners() {
@@ -126,96 +105,19 @@ public abstract class Game extends BukkitRunnable implements IGameListener, Auto
         return losers;
     }
 
-    protected void setFinishReason(GameFinishReason finishReason) {
-        this.finishReason = finishReason;
-    }
-
-    protected String getGameLocaleString(final String path) {
-        return getLocaleString("game." + path, true);
-    }
-
-    protected String getGameLocaleString(final String path, boolean prefix) {
-        return getLocaleString("game." + path, prefix);
-    }
-
-    public boolean isEnableStatusBar() {
-        return enableStatusBar;
-    }
-
-    public void setEnableStatusBar(boolean enableStatusBar) {
-        this.enableStatusBar = enableStatusBar;
-    }
-
-    protected String getLocaleString(final String path, final boolean prefix) {
-        String prefixString = "";
-        if (prefix) {
-            prefixString = getPlugin().getLocaleString("prefix-game", false).replace("%game%", this.getGameName());
-        }
-        return prefixString + getPlugin().getLocaleString(path, false);
-    }
-
-    public String getGameName() {
-        return gameName;
-    }
-
-    public ArtimcGamePlugin getPlugin() {
-        return (ArtimcGamePlugin) plugin;
-    }
-
-    /**
-     * 游戏与队伍管理器
-     *
-     * @return
-     */
-    protected ArtimcGameManager getManager() {
-        return ((ArtimcGamePlugin) plugin).getManager();
-    }
-
-    /**
-     * 获取游戏地图
-     *
-     * @return
-     */
-    public GameMap getGameMap() {
-        final ArtimcGamePlugin agp = (ArtimcGamePlugin) plugin;
-        return new GameMap(agp.getGameConfigurations().get(gameName), plugin);
-    }
 
     public Party getObserveParty() {
-        return observeParty;
+        return companion.getObserveParty();
     }
 
     public Map<PartyName, Party> getGameParties() {
-        return gameParties;
+        return companion.getGameParties();
     }
 
-    public int getGameLeftTick() {
-        return gameLeftTick;
+    public Set<Party> getParties() {
+        return companion.getParties();
     }
 
-    protected void setGameLeftTick(int gameLeftTick) {
-        this.gameLeftTick = gameLeftTick;
-    }
-
-    /**
-     * 游戏持续时间（仅限游戏中）
-     *
-     * @return
-     */
-    public int getGamingLifeTime() {
-        if (!isGaming()) return -1;
-        return (getCurrentTick() - gameStartAt) / 20;
-    }
-
-
-    /**
-     * 计时器控制器
-     *
-     * @return
-     */
-    public Map<String, GameTimer> getTimerManager() {
-        return timerManager;
-    }
 
     public void showTitle(String title, String subTitle, int fadeIn, int stay, int fadeOut) {
         for (Player player : getOnlinePlayers()) {
@@ -223,170 +125,25 @@ public abstract class Game extends BukkitRunnable implements IGameListener, Auto
         }
     }
 
+    public Companion getCompanion() {
+        return companion;
+    }
+
     public void setPlayerInvincible(Player player, boolean invincible) {
-        if (invincible && !invinciblePlayers.contains(player.getUniqueId()))
-            invinciblePlayers.add(player.getUniqueId());
-        else if (!invincible && invinciblePlayers.contains(player.getUniqueId()))
-            invinciblePlayers.remove(player.getUniqueId());
+        companion.setInvincible(player, invincible);
     }
 
     public boolean isPlayerInvincible(Player player) {
-        return invinciblePlayers.contains(player.getUniqueId());
+        return companion.isInvincible(player);
     }
 
-    /**
-     * 所有组件的初始化
-     * 在时间刻开始之前必须完成初始化
-     */
-    protected abstract void onInitialization();
 
     /**
      * 玩家加入游戏
      * 自动加入队伍，自动加入观察者，整队自动加入游戏
      */
-    public void addCompanion(final Player player) {
-        Party gameParty = null;
-
-        // 如果玩家没有队伍，从游戏中寻找未满的队伍
-        if (!getManager().playerInParty(player)) {
-            gameParty = getUnfullParty();
-            playerJoinGame(player, gameParty);
-        }
-        // 如果玩家有队伍
-        else {
-            // 队伍满载，抛出异常
-            if (gameParties.size() >= getGameMap().getMaxParties())
-                throw new IllegalStateException(getGameLocaleString("game-parties-overload").replace("%limit%", String.valueOf(getGameMap().getMaxParties())));
-
-            gameParty = getManager().getPlayerParty(player);
-
-            // 如果玩家队伍人数超过限制，返回异常
-            if (gameParty.size() > getGameMap().getMaxMembers()) {
-                throw new IllegalStateException(getGameLocaleString("party-members-overload").replace("%limit%", String.valueOf(getGameMap().getMaxMembers())));
-            }
-
-            // 如果玩家的队伍 已经在游戏中了，返回异常
-            if (gameParty.getPartyName() != null && gameParties.containsKey(gameParty.getPartyName())) {
-                throw new IllegalStateException(getGameLocaleString("ur-party-already-in-game"));
-            }
-
-            // 只有队长能够带来队伍进入游戏
-            if (!gameParty.isOwner(player))
-                throw new IllegalStateException(getGameLocaleString("not-party-onwer-join-game"));
-
-            partyJoinGame(gameParty);
-        }
-    }
-
-    /**
-     * 玩家的队伍整队加入游戏
-     * 离线的玩家将自动离开队伍
-     *
-     * @param party 玩家的队伍
-     */
-    private void partyJoinGame(Party party) {
-        // 为新队伍分配颜色
-        PartyName partyName = getNextPartyName();
-        // 新队伍设置游戏
-        party.setGame(this);
-        // 新队伍设置颜色
-        party.setPartyName(partyName);
-        for (Object p : party.getPlayers().toArray().clone()) {
-            OfflinePlayer player = getPlugin().getServer().getOfflinePlayer((UUID) p);
-            if (player.isOnline()) {
-                add((Player) player);
-            } else {
-                party.leave(player);
-            }
-        }
-        gameParties.put(partyName, party);
-        onPartyJoinGame(party);
-        // 队伍加入游戏之后，由于是整队加入的游戏
-        // 所以需要为队伍内的成员分别执行一次 onPlayerJoinGame 事件
-        for (Player player : party.getOnlinePlayers()) {
-            onPlayerJoinGame(player, party, false);
-        }
-        party.sendMessage(getGameLocaleString("party-join-game"));
-        log(String.format("%s join the game.", party.getName()));
-    }
-
-    /**
-     * 当有队伍加入游戏
-     *
-     * @param party
-     */
-    protected void onPartyJoinGame(Party party) {
-        // 有新的队伍加入游戏，更新玩家的计分板
-        changeGameScoreboard(useScoreboard(), this.getClass());
-        //useScoreboard();
-    }
-
-    /**
-     * 当玩家加入游戏时
-     *
-     * @param player
-     * @param party
-     */
-    protected void onPlayerJoinGame(Player player, Party party, boolean isObserver) {
-        player.teleport(getGameMap().getSpawn().get("default"));
-        log(String.format("%s join the game.", player.getName()));
-    }
-
-    /**
-     * 表示玩家加入游戏
-     * <p>
-     * 1. 加入观察者
-     * 2. 加入现有队伍
-     * 3. 加入新的队伍
-     *
-     * @param player 玩家
-     * @param party  玩家当前的队伍
-     */
-    private void playerJoinGame(Player player, Party party) {
-        // 如果玩家的队伍时 观察者
-        if (observeParty.equals(party)) {
-            addObserver(player);
-        }
-        // 玩家加入了现有的队伍
-        else if (gameParties.values().contains(party)) {
-            // 队伍中添加玩家
-            party.join(player);
-            // 游戏中添加玩家
-            add(player);
-            party.sendMessage(getGameLocaleString("party-join-player").replace("%player_name%", player.getName()));
-            onPlayerJoinGame(player, party, false);
-        }
-        // 玩家以一个新的队伍加入游戏
-        else {
-            // 为新队伍分配颜色
-            PartyName partyName = getNextPartyName();
-            party.join(player);
-            party.setOwner(player);
-            // 新队伍设置游戏
-            party.setGame(this);
-            // 新队伍设置颜色
-            party.setPartyName(partyName);
-            // 游戏中添加
-            add(player);
-            gameParties.put(partyName, party);
-            onPartyJoinGame(party);
-            party.sendMessage(getGameLocaleString("party-join-player").replace("%player_name%", player.getName()));
-            onPlayerJoinGame(player, party, false);
-        }
-    }
-
-    /**
-     * 主动添加观察者
-     *
-     * @param player
-     */
-    public void addObserver(Player player) {
-        observeParty.join(player);
-        // 游戏中添加玩家
-        add(player);
-        observeParty.sendMessage(getGameLocaleString("ob-join-player").replace("%player_name%", player.getName()));
-        player.teleport(getGameMap().getSpawn().get("default"));
-        onPlayerJoinGame(player, observeParty, true);
+    public void addCompanion(Player player) {
+        companion.addCompanion(player);
     }
 
     /**
@@ -395,157 +152,13 @@ public abstract class Game extends BukkitRunnable implements IGameListener, Auto
      * @param player
      */
     public void setPlayerAsObserver(Player player) {
-        observeParty.sendMessage(getGameLocaleString("ob-join-player").replace("%player_name%", player.getName()));
+        getObserveParty().sendMessage(getGameLocaleString("ob-join-player").replace("%player_name%", player.getName()));
         player.setGameMode(GameMode.SPECTATOR);
     }
 
-    /**
-     * 获取一个没有满员的队伍
-     * 如果所有队伍都满员，返回观察者队伍
-     * 优先将队伍填满，其次将队伍成员填满
-     * 分配策略平均分配
-     * 此方法不对队伍做任何修改
-     *
-     * @return 返回游戏队伍，如果没有合适的游戏队伍，返回观察者队伍
-     */
-    private Party getUnfullParty() {
-        Party ret = null;
-        // 优先填满队伍，队伍中至少 1 个玩家
-        int maxParties = getGameMap().getMaxParties();
-        // 如果队伍没有满，返回新的队伍
-        if (gameParties.size() < maxParties) {
-            ret = new Party(this, plugin);
-        }
-        // 队伍已经填满，寻找没有满员的队伍
-        else {
-            final int maxMembers = getGameMap().getMaxMembers();
-            // 1. 当前游戏中找一个没有满员的队伍
-            //    寻找成员最少的队伍加入
-            int minPartyMember = 99999;
-            for (final Party party : gameParties.values()) {
-                // 找到没有满员的队伍了
-                if (party.size() < maxMembers && party.size() < minPartyMember) {
-                    minPartyMember = party.size();
-                    ret = party;
-                }
-            }
-            // 如果全都满员了，返回观察者队伍
-            if (ret == null) ret = observeParty;
-        }
-        return ret;
-    }
-
-    /**
-     * 获取下一个可用的队伍颜色
-     *
-     * @return
-     */
-    private PartyName getNextPartyName() {
-        for (final PartyName pn : partyNames) {
-            if (gameParties.get(pn) == null) {
-                return pn;
-            }
-        }
-        throw new IllegalStateException();
-    }
-
-    /**
-     * 游戏等待时间超时
-     */
-    protected void onGameTimeout() {
-
-    }
-
-    /**
-     * 计时器走动
-     *
-     * @param timer
-     */
-    protected void onGameTimerUpdate(final GameTimer timer) {
-
-    }
-
-    /**
-     * 游戏帧开始流动
-     */
-    private void startTick() {
-        isRunning = true;
-        gameStatus = GameStatus.WAITING;
-        // 时间刻开始运行
-        runTaskTimer(plugin, 0, 0);
-        gameCreate();
-    }
-
-    private void gameCreate() {
-        /**
-         * 等待队伍加入的计时器
-         */
-        new GameTimer(WAIT_PERIOD_TIMER_NAME, getGameMap().getWaitPeriod(), this) {
-            @Override
-            protected void onFinish() {
-                log(String.format("计时器： %s 结束", WAIT_PERIOD_TIMER_NAME));
-                // 等待时间结束，但是游戏并未开始
-                if (!isGaming()) {
-                    log(String.format("游戏等待超时，即将关闭游戏"));
-                    // 超时
-                    onGameTimeout();
-                    // 关闭游戏
-                    if (!isClosing) closeGame();
-                }
-
-                super.onFinish();
-            }
-
-            @Override
-            protected void onUpdate() {
-                if (enableStatusBar) getStatusBar().setProgress((double) getCurrent() / (double) getPeriod());
-                super.onUpdate();
-            }
-        }.start();
-
-        log(String.format("计时器： %s 启动", WAIT_PERIOD_TIMER_NAME));
-        onGameCreate();
-    }
-
-    /**
-     * 游戏创建成功
-     * 已经完成了初始化、时间刻已经开始启动
-     */
-    protected void onGameCreate() {
-        World gameWorld = getPlugin().getServer().getWorld(getGameMap().getWorldName());
-        // 隐藏成就
-        gameWorld.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
-        // 死亡不掉落
-        gameWorld.setGameRule(GameRule.KEEP_INVENTORY, true);
-        // 关闭袭击
-        gameWorld.setGameRule(GameRule.DISABLE_RAIDS, true);
-        // 关闭日月交替
-        gameWorld.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
-        // 关闭生物生成
-        gameWorld.setGameRule(GameRule.DO_MOB_SPAWNING, false);
-        // 关闭天气
-        gameWorld.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
-        // 观察者不生成区块
-        gameWorld.setGameRule(GameRule.SPECTATORS_GENERATE_CHUNKS, false);
-        // 永远白天
-        gameWorld.setTime(6000);
-    }
-
-    /**
-     * 游戏是否可以开始，满足条件之后游戏自动从
-     * 等待中 切换为 游戏开始
-     */
-    protected boolean willGameStart() {
-        // TODO Auto-generated method stub
-        return false;
-    }
-
-    /**
-     * 游戏结束标志，当返回null时，游戏继续执行
-     * 当返回 GameFinishReason 时，游戏结束
-     */
-    protected GameFinishReason willGameFinish() {
-        return finishReason;
+    public void onPartyJoinGame(PartyJoinGameEvent event) {
+        // 有新的队伍加入游戏，更新玩家的计分板
+        changeGameScoreboard(useScoreboard(), this.getClass());
     }
 
     protected Class<? extends GameScoreboard> useScoreboard() {
@@ -558,110 +171,39 @@ public abstract class Game extends BukkitRunnable implements IGameListener, Auto
         try {
             Constructor<? extends GameScoreboard> ct = type.getDeclaredConstructor(BaseScoreboard.class, game);
             GameScoreboard newScoreboard;
-            for (Party party : gameParties.values()) {
+            for (Party party : getParties()) {
                 newScoreboard = ct.newInstance(party.getScoreboard(), this);
                 party.setScoreboard(newScoreboard);
             }
             // 观察者队伍，使用游戏计分板
-            newScoreboard = ct.newInstance(observeParty.getScoreboard(), this);
-            observeParty.setScoreboard(newScoreboard);
+            newScoreboard = ct.newInstance(getObserveParty().getScoreboard(), this);
+            getObserveParty().setScoreboard(newScoreboard);
         } catch (Exception ex) {
             sendMessage(getGameLocaleString("scoreboard-unsupport: ") + ex.getMessage());
         }
     }
 
-    private void gameStart() {
-        if (timerManager.get(Game.WAIT_PERIOD_TIMER_NAME) != null)
-            timerManager.get(Game.WAIT_PERIOD_TIMER_NAME).close();
-        // 记录游戏开始的时间刻
-        gameStartAt = getCurrentTick();
-        // 修改队伍的计分板
-        changeGameScoreboard(useScoreboard(), this.getClass());
-        /**
-         * 游戏开始计时器
-         */
-        new GameTimer(GAME_PERIOD_TIMER_NAME, getGameMap().getGamePeriod(), this) {
-            @Override
-            protected void onFinish() {
-                log(String.format("计时器：%s 结束", GAME_PERIOD_TIMER_NAME));
-                if (getGameStatus() != GameStatus.FINISH) {
-                    finishReason = GameFinishReason.GAMING_TIMEOUT;
-                    log(String.format("游戏即将结束，原因：游戏时间已到"));
-                }
-            }
-
-            @Override
-            protected void onUpdate() {
-                setGameLeftTick(getPeriod() - getCurrent());
-                if (enableStatusBar) getStatusBar().setProgress((double) getCurrent() / (double) getPeriod());
-            }
-        }.start();
-        log(String.format("游戏开始，计时器：%s 启动", GAME_PERIOD_TIMER_NAME));
-        onGameStart();
-
-    }
 
     /**
      * 当游戏从 等待中 切换成 游戏开始 之后执行
      */
     protected void onGameStart() {
-
+        // 修改队伍的计分板
+        changeGameScoreboard(useScoreboard(), this.getClass());
+        // 修改所有玩家的命名牌显示
+        nameTagManager.apply();
     }
 
-    /**
-     * 游戏结束，进入结算期
-     *
-     * @param reason
-     */
-    private void gameFinish(final GameFinishReason reason) {
-        if (timerManager.get(Game.GAME_PERIOD_TIMER_NAME) != null)
-            timerManager.get(Game.GAME_PERIOD_TIMER_NAME).close();
-        gameFinishAt = getCurrentTick();
-        finishReason = reason;
-        log(String.format("游戏结束，原因：%s", reason));
-        /**
-         * 游戏结束计时器
-         */
-        new GameTimer(FINISH_PERIOD_TIMER_NAME, getGameMap().getFinishPeriod(), this) {
-
-            @Override
-            protected void onFinish() {
-                log(String.format("计时器：%s 结束", FINISH_PERIOD_TIMER_NAME));
-                if (!isClosing) {
-                    closeGame();
-                    log(String.format("游戏已经关闭"));
-                }
-                super.onFinish();
-            }
-
-            @Override
-            protected void onUpdate() {
-                if (enableStatusBar) getStatusBar().setProgress((double) getCurrent() / (double) getPeriod());
-                super.onUpdate();
-            }
-        }.start();
-        /**
-         * 设置胜负队伍
-         */
-        for (Party party : gameParties.values()) {
+    @Override
+    protected void onGameFinish(FinishReason finishReason) {
+        for (Party party : getParties()) {
             if (willWinTheGame(party)) {
                 winners.add(party);
             } else {
                 losers.add(party);
             }
         }
-        log(String.format("游戏结束，计时器：%s 启动", FINISH_PERIOD_TIMER_NAME));
-        onGameFinish(reason);
-    }
-
-
-    /**
-     * 当游戏结束时触发执行
-     */
-    protected void onGameFinish(final GameFinishReason reason) {
-        if (reason == GameFinishReason.NO_COMPANION) {
-            sendMessage("&7没有玩家加入，游戏结束");
-        }
+        super.onGameFinish(finishReason);
     }
 
     /**
@@ -671,35 +213,6 @@ public abstract class Game extends BukkitRunnable implements IGameListener, Auto
      */
     protected abstract boolean willWinTheGame(Party party);
 
-    /**
-     * 每时刻都在执行
-     */
-    protected abstract void onUpdate();
-
-    /**
-     * 游戏被关闭之前执行
-     */
-    protected void onGameClose() {
-
-    }
-
-    /**
-     * 获取当前状态进度条
-     *
-     * @return
-     */
-    public BossBar getStatusBar() {
-        return statusBar;
-    }
-
-    /**
-     * 获取当前游戏中的玩家
-     *
-     * @return
-     */
-    public Set<UUID> getPlayers() {
-        return Collections.unmodifiableSet(players);
-    }
 
     /**
      * 获取当前游戏中的在线玩家
@@ -712,80 +225,12 @@ public abstract class Game extends BukkitRunnable implements IGameListener, Auto
 
     public Set<Player> getOnlinePlayersExceptObserver() {
         Set<Player> players = new HashSet<>();
-        for (Party party : gameParties.values()) {
+        for (Party party : getParties()) {
             for (Player player : party.getOnlinePlayers()) {
                 players.add(player);
             }
         }
         return players;
-    }
-
-    /**
-     * 将玩家加入当前游戏
-     *
-     * @param player
-     * @return
-     * @throws IllegalStateException
-     */
-    protected boolean add(final UUID player) throws IllegalStateException {
-        if (!getManager().joinGame(player, this)) throw new IllegalStateException("该玩家在游玩其他游戏，无法加入");
-        return players.add(player);
-    }
-
-    /**
-     * 将当前玩家加入游戏
-     *
-     * @param player
-     * @return
-     */
-    protected boolean add(final Player player) {
-        statusBar.addPlayer(player);
-        return add(player.getUniqueId());
-    }
-
-    /**
-     * 将玩家从当前游戏中移除
-     *
-     * @param player
-     * @return
-     */
-    public boolean remove(final UUID player) {
-        if (players.remove(player)) {
-            if (!getManager().leaveGame(player)) {
-                plugin.getLogger().warning("玩家已经离开了游戏，但是在Manager中离开失败");
-            }
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * 检测玩家是否在当前游戏中
-     *
-     * @param player
-     * @return
-     */
-    public boolean contains(final UUID player) {
-        return players.contains(player);
-    }
-
-    /**
-     * 检测玩家时是否在当前游戏中
-     *
-     * @param player
-     * @return
-     */
-    public boolean contains(final Player player) {
-        return contains(player.getUniqueId());
-    }
-
-    /**
-     * 获得当前游戏中的玩家数量
-     *
-     * @return
-     */
-    public int size() {
-        return players.size();
     }
 
     /**
@@ -798,29 +243,11 @@ public abstract class Game extends BukkitRunnable implements IGameListener, Auto
         for (final Player player : onlinePlayers) {
             for (final Player p : onlinePlayers) {
                 if (p != player) {
-                    if (value) player.hidePlayer(plugin, p);
-                    else player.showPlayer(plugin, p);
+                    if (value) player.hidePlayer(getPlugin(), p);
+                    else player.showPlayer(getPlugin(), p);
                 }
             }
         }
-    }
-
-    /**
-     * 获取当前游戏状态
-     *
-     * @return
-     */
-    public GameStatus getGameStatus() {
-        return gameStatus;
-    }
-
-    /**
-     * 玩家离开游戏事件
-     *
-     * @param player
-     */
-    protected void onPlayerLeaveGame(Player player) {
-
     }
 
     public GameItem dropItem(ItemStack item, Location location) {
@@ -835,204 +262,118 @@ public abstract class Game extends BukkitRunnable implements IGameListener, Auto
      *
      * @param player
      */
-    public void leaveGame(Player player) {
-        if (statusBar != null) // update UI
-            statusBar.removePlayer(player);
-        // 游戏中将玩家移除
-        remove(player.getUniqueId());
-        player.teleport(getGameMap().getLobby());
-        // 玩家离开队伍，更新玩家计分板
-        Party party = getManager().getPlayerParty(player);
-        if (party != null) {
-            party.leave(player);
-            // 更新玩家当前队伍的计分板
-            // 如果队伍中成员为空，将该队伍移除游戏
-            if (party.getOnlinePlayers().isEmpty()) {
-                gameParties.remove(party.getPartyName());
-                onPartyLeave(party);
-                party.setGame(null);
-                party.setPartyName(null);
-                party.dismiss();
-            }
-        }
+    public void removeCompanion(Player player) {
+        companion.removeCompanion(player);
         log(String.format("玩家 %s 离开了游戏", player.getName()));
-        resetPlayer(player);
-        onPlayerLeaveGame(player);
     }
 
-    protected void onPartyLeave(Party party) {
+    @Override
+    public void onPlayerLeaveGame(PlayerLeaveGameEvent event) {
+        super.onPlayerLeaveGame(event);
 
-    }
-
-    public void closeGame() {
-
-        try {
-            gameStatus = GameStatus.CLOSING;
-            isClosing = true;
-            // 停止游戏
-            cancel();
-            setInvisibility(false);
-            isRunning = false;
-            // 清理计时器
-            try {
-                for (GameTimer timer : timerManager.values()) {
-                    timer.close();
-                }
-            } catch (Exception ex) {
-                log(ex.getMessage());
-            }
-            timerManager.clear();
-            onGameClosing();
-            // 清空数据
-            // 将队伍的游戏删掉
-            statusBar.removeAll();
-            // 将游戏中的队伍清理掉
-            for (Party party : gameParties.values()) {
-                gameParties.remove(party.getPartyName());
-                party.sendMessage(getGameLocaleString("game-is-closed"));
-                party.setGame(null);
-                party.setPartyName(null);
-                // 将游戏内队伍的计分板设置为队伍计分板
-                party.setScoreboard(new PartyScoreboard(party.getScoreboard(), party));
-                party.updateScoreboard();
-                for (UUID player : party.getPlayers()) {
-                    remove(player);
-                    OfflinePlayer offline = getPlugin().getServer().getOfflinePlayer(player);
-                    if (offline.isOnline()) {
-                        ((Player) offline).teleport(getGameMap().getLobby());
-                    }
-                }
-            }
-            // ========= 观察者队伍 处理 =========
-
-            clearObserver();
-            // ========= 观察者队伍 处理 =========
-            // 清理队伍
-            gameParties.clear();
-            // 清理玩家
-            players.clear();
-            winners.clear();
-            losers.clear();
-            invinciblePlayers.clear();
-            playerPlacedBlocks.clear();
-
-        } catch (Exception ex) {
-            log(ex.getMessage());
-        } finally {
-            // 游戏结束重置地形
-            world.reset();
+        if (event.getPlayer().isOnline()) {
+            Player player = (Player) event.getPlayer();
+            player.teleport(getGameMap().getLobby());
         }
     }
 
-    public void onWorldReset() {
-        onGameClose();
-        close();
+    /**
+     * 当玩家加入游戏时
+     *
+     * @param player
+     * @param party
+     */
+    @Override
+    public void onPlayerJoinGame(PlayerJoinGameEvent event) {
+        super.onPlayerJoinGame(event);
+
+        event.getPlayer().teleport(getGameMap().getSpawn().get("default"));
+        if (event.isObserver()) {
+            setPlayerAsObserver(event.getPlayer());
+        }
+    }
+
+    public void onPartyLeaveGame(PartyLeaveGameEvent event) {
+        event.getParty().sendMessage(getGameLocaleString("game-is-closed"));
+        event.getParty().setGame(null);
+        event.getParty().setPartyName(null);
+        event.getParty().setScoreboard(new PartyScoreboard(getObserveParty().getScoreboard(), event.getParty()));
+        event.getParty().updateScoreboard();
+    }
+
+    /**
+     * 游戏被关闭之前执行
+     */
+    @Override
+    protected void onGameClose(CloseReason closeReason) {
+        // 重置地形，如果需要的话
+        getGameWorld().reset(getGameMap().getSchemaFile(), getGameMap().getBaseHeight());
+        setInvisibility(false);
+        // 清理
+        clearObserver();
+        companion.clear();
+        players.clear();
+        winners.clear();
+        losers.clear();
+        playerPlacedBlocks.clear();
+        super.onGameClose(closeReason);
     }
 
     private void clearObserver() {
-        Object[] players = observeParty.getPlayers().toArray().clone();
+        Object[] players = getObserveParty().getPlayers().toArray().clone();
         for (Object obj : players) {
             UUID player = (UUID) obj;
-            observeParty.getScoreboard().remove(player);
+            getObserveParty().getScoreboard().remove(player);
             OfflinePlayer offline = getPlugin().getServer().getOfflinePlayer(player);
             resetPlayer((Player) offline);
-            observeParty.leave(offline);
-            leaveGame(((Player) offline));
+            getObserveParty().leave(offline);
+            removeCompanion(((Player) offline));
         }
     }
 
-    /**
-     * 关闭游戏
-     */
-    public void close() {
+    @Override
+    public void close() throws Exception {
         log(String.format("游戏已释放"));
+        super.close();
     }
 
     /**
-     * 游戏即将关闭
-     * 此时游戏已经停止，但是玩家和队伍还没有删除
-     */
-    protected void onGameClosing() {
-        for (Party party : gameParties.values()) {
-            party.teleport(getGameMap().getLobby());
-        }
-    }
-
-    /**
-     * 获取游戏当前时间刻
-     *
-     * @return
-     */
-    public int getCurrentTick() {
-        return currentTick;
-    }
-
-    /**
-     * 每个时间刻都会执行
+     * 固定每秒运行
      */
     @Override
-    public void run() {
-        try {
-            cycleOfGameStart();
-            cycleOfGaming();
-            onUpdate();
-            if (currentTick % 20 == 0) {
-                for (final Party party : gameParties.values()) {
-                    party.updateScoreboard();
-                }
-                // 实时更新观察者队伍计分板
-                observeParty.updateScoreboard();
-                // 每秒钟运行
-                onFixedUpdate();
-                fixObserver();
-            }
-            // 强制停止游戏
-            if (!isClosing && willForceCloseGame()) {
-                closeGame();
-            }
+    protected void onFixedUpdate() {
+        for (final Party party : getParties()) {
+            party.updateScoreboard();
         }
-        // 不能让异常中断游戏
-        catch (Exception ex) {
-//            throw ex;
-            getPlugin().getServer().getLogger().warning("onTick Exception: " + ex.getMessage());
-        }
-        // 无论如何，游戏时间刻都在增加
-        finally {
-            // 时刻都在运行
-            currentTick++;
-        }
+        // 实时更新观察者队伍计分板
+        updateObservers();
     }
 
-    private void fixObserver() {
-        for (Player player : observeParty.getOnlinePlayers()) {
+    @Override
+    public void onWaitPeriodUpdate(GameTimer timer) {
+        super.onWaitPeriodUpdate(timer);
+    }
+
+    @Override
+    public void onGamePeriodUpdate(GameTimer timer) {
+        super.onGamePeriodUpdate(timer);
+    }
+
+    @Override
+    public void onGameTimerUpdate(GameTimer timer) {
+        super.onGameTimerUpdate(timer);
+    }
+
+    @Override
+    public void onFinishPeriodUpdate(GameTimer timer) {
+        super.onFinishPeriodUpdate(timer);
+    }
+
+    private void updateObservers() {
+        getObserveParty().updateScoreboard();
+        for (Player player : getObserveParty().getOnlinePlayers()) {
             if (player.getGameMode() != GameMode.SPECTATOR) {
                 player.setGameMode(GameMode.SPECTATOR);
-            }
-        }
-    }
-
-    /**
-     * 检测游戏是否可以开始
-     */
-    private void cycleOfGameStart() {
-        if (gameStatus == GameStatus.WAITING && willGameStart()) {
-            gameStatus = GameStatus.GAMING;
-            gameStart();
-        }
-    }
-
-    /**
-     * 检测游戏是否可以结束
-     */
-    private void cycleOfGaming() {
-        GameFinishReason reason = null;
-        if (isGaming()) {
-            reason = willGameFinish();
-            // 如果 当前游戏还没有结束条件，但是此时有了结束条件，游戏结束
-            if (reason != null) {
-                gameStatus = GameStatus.FINISH;
-                gameFinish(reason);
-                sendMessage(getGameLocaleString("game-is-finish", false));
             }
         }
     }
@@ -1052,62 +393,18 @@ public abstract class Game extends BukkitRunnable implements IGameListener, Auto
     /**
      * 需要确保时有玩家在场
      * 当游戏内没有玩家的时候，这个游戏就已经没有存在的必要了
-     * 在游戏创建的5秒后，没有玩家在场，就可以释放了
      *
      * @return
      */
-    protected boolean willForceCloseGame() {
-        boolean isPartyEmpty = true;
-        // Ob 不算 玩家
-        for (Party party : gameParties.values()) {
-            isPartyEmpty &= party.getOnlinePlayers().size() == 0;
+    @Override
+    protected CloseReason willGameClose() {
+        // 除了等待期间以外，如果游戏中没有玩家在线，即可关闭游戏
+        if (!isWaiting() && companion.getOnlinePlayers().isEmpty()) {
+            return CloseReason.NO_ONLINE_PLAYERS;
         }
-        return currentTick > 5 * 20 && isPartyEmpty;
+        return super.willGameClose();
     }
 
-    /**
-     * 计时器结束
-     *
-     * @param timer
-     */
-    protected void onGameTimerFinish(final GameTimer timer) {
-
-    }
-
-    /**
-     * 固定每秒运行
-     */
-    protected void onFixedUpdate() {
-
-        final Object[] timers = timerManager.values().toArray().clone();
-        for (final Object o : timers) {
-            final GameTimer timer = (GameTimer) o;
-            if (timer.getCurrent() <= 0) {
-                timer.stop();
-                onGameTimerFinish(timer);
-                timerManager.remove(timer.getName());
-            } else {
-                timer.tick();
-                onGameTimerUpdate(timer);
-            }
-        }
-    }
-
-    /**
-     * 向游戏内所有队伍发送消息
-     *
-     * @param message
-     */
-    public void sendMessage(String message) {
-        // prefix-game: "&6[%game%]&f "
-        message = getLocaleString("prefix-game", false).replace("%game%", getGameName()) + ChatColor.translateAlternateColorCodes('&', message);
-        for (UUID uuid : players) {
-            OfflinePlayer player = getPlugin().getServer().getOfflinePlayer(uuid);
-            if (player.isOnline()) {
-                ((Player) player).sendMessage(message);
-            }
-        }
-    }
 
     /**
      * 玩家是否在出生点保护的范围里
@@ -1119,13 +416,8 @@ public abstract class Game extends BukkitRunnable implements IGameListener, Auto
         return null;
     }
 
-    /**
-     * This will be called when a player in this game joins the server
-     *
-     * @param event PlayerJoinEvent
-     */
-    public void onPlayerJoin(final PlayerJoinEvent event) {
-
+    public boolean contains(Player player) {
+        return contains(player.getUniqueId());
     }
 
     /**
@@ -1140,99 +432,8 @@ public abstract class Game extends BukkitRunnable implements IGameListener, Auto
         event.getPlayer().setGlowing(false);
         // 玩家下线 表示离开游戏
         resetPlayer(event.getPlayer());
-        leaveGame(event.getPlayer());
-
-    }
-
-    /**
-     * This will be called when a player in this game moves
-     *
-     * @param event PlayerMoveEvent
-     */
-    public void onPlayerMove(final PlayerMoveEvent event) {
-
-    }
-
-    /**
-     * This will be called when a player in this game drops an item
-     *
-     * @param event PlayerDropItemEvent
-     */
-    public void onPlayerDropItem(final PlayerDropItemEvent event) {
-
-    }
-
-    /**
-     * This will be called when a player in this game changes game mode
-     *
-     * @param event PlayerGameModeChangeEvent
-     */
-    public void onPlayerGameModeChange(final PlayerGameModeChangeEvent event) {
-
-    }
-
-    /**
-     * This will be called when a player in this game toggles flight
-     *
-     * @param event PlayerToggleFlightEvent
-     */
-    public void onPlayerToggleFlight(final PlayerToggleFlightEvent event) {
-
-    }
-
-    /**
-     * This will be called when a player in this game's hunger changes
-     *
-     * @param event FoodLevelChangeEvent
-     */
-    public void onPlayerFoodLevelChange(final FoodLevelChangeEvent event) {
-
-    }
-
-    /**
-     * This will be called when a player in this game interacts with something
-     *
-     * @param event PlayerInteractEvent
-     */
-    public void onPlayerInteract(final PlayerInteractEvent event) {
-
-    }
-
-    /**
-     * This will be called when a player in this game interacts with an entity
-     *
-     * @param event PlayerInteractEntityEvent
-     */
-    public void onPlayerInteractEntity(final PlayerInteractEntityEvent event) {
-
-    }
-
-    /**
-     * This will be called when a player in this game manipulates an armor stand
-     *
-     * @param event PlayerArmorStandManipulateEvent
-     */
-    public void onPlayerArmorStandManipulate(final PlayerArmorStandManipulateEvent event) {
-
-    }
-
-    /**
-     * This will be called when a player in this game shoots a bow
-     *
-     * @param event EntityShootBowEvent
-     */
-    public void onPlayerShootBow(final EntityShootBowEvent event) {
-
-    }
-
-    /**
-     * This will be called when a projectile shot by a player in this game hits
-     * something
-     *
-     * @param event ProjectileHitEvent
-     */
-    public void onProjectileHit(final ProjectileHitEvent event) {
-
+        removeCompanion(event.getPlayer());
+        super.onPlayerQuit(event);
     }
 
     /**
@@ -1253,13 +454,13 @@ public abstract class Game extends BukkitRunnable implements IGameListener, Auto
                 }
             }
         }
+        super.onPlayerDamage(event);
     }
 
     /**
      * This will be called when a player in this game takes damage by another player
      */
     public void onPlayerDamageByPlayer(final Player player, final Player damager, final EntityDamageByEntityEvent eventSource) {
-
     }
 
     /**
@@ -1298,7 +499,7 @@ public abstract class Game extends BukkitRunnable implements IGameListener, Auto
                 onPlayerDamageByPlayer(player, damager, event);
             }
         }
-
+        super.onPlayerDamageByEntity(event);
     }
 
     protected boolean willPlayerTakesDamage(Player player, Player damager) {
@@ -1323,6 +524,7 @@ public abstract class Game extends BukkitRunnable implements IGameListener, Auto
             playerPlacedBlocks.add(event.getBlock());
         }
 
+        super.onBlockPlace(event);
     }
 
     /**
@@ -1343,6 +545,8 @@ public abstract class Game extends BukkitRunnable implements IGameListener, Auto
                 event.setCancelled(true);
             }
         }
+
+        super.onBlockBreak(event);
     }
 
 
@@ -1350,9 +554,8 @@ public abstract class Game extends BukkitRunnable implements IGameListener, Auto
         if (!isGaming()) {
             event.setCancelled(true);
         }
-    }
 
-    public void onPlayerItemConsume(final PlayerItemConsumeEvent event) {
+        super.onPlayerBucketEmpty(event);
     }
 
     /**
@@ -1363,25 +566,11 @@ public abstract class Game extends BukkitRunnable implements IGameListener, Auto
     public void onEntityChangeBlock(final EntityChangeBlockEvent event) {
         // 游戏未开始时，玩家无法破坏任何方块
         if (!isGaming()) event.setCancelled(true);
-    }
 
-    /**
-     * This will be called when an player dead
-     *
-     * @param event Entity Death Event
-     */
-    public void onPlayerDeath(final PlayerDeathEvent event) {
+        super.onEntityChangeBlock(event);
 
     }
 
-    /**
-     * 玩家复活时候执行
-     *
-     * @param event
-     */
-    public void onPlayerRespawn(final PlayerRespawnEvent event) {
-
-    }
 
     @Override
     public void onGameItemPickup(GameItemPickupEvent event) {
@@ -1390,4 +579,5 @@ public abstract class Game extends BukkitRunnable implements IGameListener, Auto
             gameItems.remove(event.getItem());
         }
     }
+
 }

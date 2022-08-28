@@ -1,8 +1,10 @@
 package plugin.artimc;
 
 import java.util.*;
+import java.util.logging.Logger;
 
 import org.bukkit.Location;
+import org.bukkit.Server;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.player.*;
@@ -10,9 +12,8 @@ import org.bukkit.event.block.*;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.plugin.Plugin;
-
-import plugin.artimc.engine.Game;
+import plugin.artimc.common.IComponent;
+import plugin.artimc.engine.IGame;
 import plugin.artimc.engine.Party;
 import plugin.artimc.utils.Utils;
 
@@ -23,51 +24,69 @@ import plugin.artimc.utils.Utils;
  * 作者：Leo
  * 创建时间：2022/7/29 20:40
  */
-public class ArtimcGameManager implements Listener {
+public class ArtimcManager implements IComponent, Listener {
+    private final ArtimcPlugin plugin;
+    private final PlayerGameManager playerGameManager;
+    private final PlayerPartyManager playerPartyManager;
+    private final GameManager gameManager;
+    private final WorldManager worldManager;
+    private final PlayerChannelManager playerChannelManager;
 
-    private final Plugin plugin;
-
-    // 玩家所在队伍
-    private final Map<UUID, Party> parties;
-
-    // 玩家所在游戏
-    private final Map<UUID, Game> games;
-
-    //private final Map<String, >
-
-    // 玩家队伍聊天频道
-    private final Set<UUID> enablesPartyChannel;
-
-    public ArtimcGameManager(Plugin plugin) {
+    public ArtimcManager(ArtimcPlugin plugin) {
         this.plugin = plugin;
-        this.parties = new HashMap<>();
-        this.games = new HashMap<>();
-        this.enablesPartyChannel = new HashSet<>();
-
+        this.playerGameManager = new PlayerGameManager(this);
+        this.playerPartyManager = new PlayerPartyManager(this);
+        this.gameManager = new GameManager(this);
+        this.worldManager = new WorldManager(this);
+        this.playerChannelManager = new PlayerChannelManager(this);
     }
 
-    /**
-     * 获取当前的插件
-     *
-     * @return 插件
-     */
-    public Plugin getPlugin() {
+    @Override
+    public ArtimcManager getManager() {
+        return this;
+    }
+
+    public ArtimcPlugin getPlugin() {
         return plugin;
+    }
+
+    @Override
+    public GameManager getGameManager() {
+        return gameManager;
+    }
+
+    @Override
+    public PlayerGameManager getPlayerGameManager() {
+        return playerGameManager;
+    }
+
+    @Override
+    public PlayerPartyManager getPlayerPartyManager() {
+        return playerPartyManager;
+    }
+
+    @Override
+    public PlayerChannelManager getPlayerChannelManager() {
+        return playerChannelManager;
+    }
+
+    @Override
+    public WorldManager getWorldManager() {
+        return worldManager;
+    }
+
+    @Override
+    public Server getServer() {
+        return plugin.getServer();
+    }
+
+    @Override
+    public Logger getLogger() {
+        return plugin.getLogger();
     }
 
     public Player getOnlinePlayer(UUID player) {
         return getPlugin().getServer().getPlayer(player);
-    }
-
-    public Set<Party> getParties() {
-        Set<Party> newSet = new HashSet<>();
-        for (Party p : parties.values())
-            if (!newSet.contains(p)) newSet.add(p);
-        return newSet;
-    }
-
-    public Set<Game> getGames() {
-        return Set.of(games.values().toArray(new Game[0]));
     }
 
     /**
@@ -86,29 +105,17 @@ public class ArtimcGameManager implements Listener {
     }
 
     /**
-     * 检测玩家是否在任意一个队伍中
-     *
-     * @param player Player
-     * @return {@code true} if the player is in a party
-     */
-    public boolean playerInParty(UUID player) {
-        return parties.containsKey(player);
-    }
-
-    public boolean playerInParty(Player player) {
-        return playerInParty(player.getUniqueId());
-    }
-
-    /**
      * 获取玩家所在的队伍
      *
      * @param player Player
      * @return Possibly null party
      */
+    @Deprecated
     public Party getPlayerParty(UUID player) {
-        return parties.get(player);
+        return playerPartyManager.get(player);
     }
 
+    @Deprecated
     public Party getPlayerParty(Player player) {
         return getPlayerParty(player.getUniqueId());
     }
@@ -119,10 +126,13 @@ public class ArtimcGameManager implements Listener {
      * @param player Player
      * @return {@code true} if the player is in a party
      */
+    @Deprecated
     public boolean playerInGame(UUID player) {
-        return games.containsKey(player);
+        return playerGameManager.contains(player);
+//        return playerGames.containsKey(player);
     }
 
+    @Deprecated
     public boolean playerInGame(Player player) {
         return playerInGame(player.getUniqueId());
     }
@@ -133,139 +143,16 @@ public class ArtimcGameManager implements Listener {
      * @param player Player
      * @return Possibly null game
      */
-    public Game getPlayerGame(UUID player) {
-        return games.get(player);
+    @Deprecated
+    public IGame getPlayerGame(UUID player) {
+        return playerGameManager.get(player);
+        //return playerGames.get(player);
     }
-
-    public Game getPlayerGame(Player player) {
-        return getPlayerGame(player.getUniqueId());
-    }
-
-    /**
-     * 将玩家加入一个队伍
-     *
-     * @param player Player
-     * @param party  Party
-     * @return {@code true} if the player was not already in a party
-     */
-    public boolean playerJoinParty(UUID player, Party party) {
-        return parties.putIfAbsent(player, party) == null;
-    }
-
-//    /**
-//     * 玩家开启队伍频道
-//     *
-//     * @param player
-//     * @return
-//     */
-//    public boolean enablePartyChannel(UUID player) {
-//        return enablesPartyChannel.add(player);
-//    }
-//
-//    /**
-//     * 玩家关闭队伍频道
-//     *
-//     * @param player
-//     * @return
-//     */
-//    public boolean disablePartyChannel(UUID player) {
-//        return enablesPartyChannel.remove(player);
-//    }
-
-    /**
-     * 玩家是否加入了队伍频道
-     *
-     * @param player
-     * @return
-     */
-    public boolean isPlayerEnabledPartyChannel(UUID player) {
-        return enablesPartyChannel.contains(player);
-    }
-
-    /**
-     * 让玩家离开队伍
-     *
-     * @param player Player
-     * @return {@code true} if the player was in a party
-     */
-    public boolean playerLeaveParty(UUID player) {
-//        disablePartyChannel(player);
-        return parties.remove(player) != null;
-    }
-
-    /**
-     * 强制设置玩家的队伍
-     * 不明白请勿随便调用
-     *
-     * @param player
-     * @param party
-     */
-    public void setPlayerParty(Player player, Party party) {
-        parties.put(player.getUniqueId(), party);
-    }
-
-
-    /**
-     * 让玩家加入一个游戏
-     *
-     * @param player Player
-     * @param game   Game
-     * @return {@code true} if the player was not already in a game
-     */
-    public boolean joinGame(UUID player, Game game) {
-        return games.putIfAbsent(player, game) == null;
-    }
-
-    /**
-     * 让玩家离开他当前游戏
-     *
-     * @param player Player
-     * @return {@code true} if the player was in a game
-     */
-    public boolean leaveGame(UUID player) {
-        return games.remove(player) != null;
-    }
-
-    /**
-     * 当前游戏中是否有给定的游戏
-     *
-     * @param name
-     * @return
-     */
-    public boolean containesGame(String name) {
-        for (Game game : games.values()) {
-            if (game.getGameName().equals(name)) return true;
-        }
-        return false;
-    }
-
-    /**
-     * 获取指定的游戏
-     *
-     * @param name
-     * @return
-     */
-    public Game getGame(String name) {
-        for (Game game : games.values()) {
-            if (game.getGameName().equals(name)) return game;
-        }
-        return null;
-    }
-
-    public void removeGame(String name) {
-        Object[] keys = games.keySet().toArray().clone();
-        for (Object key : keys) {
-            if (games.get(key).getGameName().equals(name)) {
-                games.remove(key);
-            }
-        }
-    }
-
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Party party = getPlayerParty(event.getPlayer().getUniqueId());
-        Game game = getPlayerGame(event.getPlayer().getUniqueId());
+        IGame game = getPlayerGame(event.getPlayer().getUniqueId());
 
         if (party != null) party.onPlayerJoin(event.getPlayer());
 
@@ -283,11 +170,10 @@ public class ArtimcGameManager implements Listener {
     }
 
 
-
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         Party party = getPlayerParty(event.getPlayer().getUniqueId());
-        Game game = getPlayerGame(event.getPlayer().getUniqueId());
+        IGame game = getPlayerGame(event.getPlayer().getUniqueId());
 
         if (party != null) {
             party.onPlayerQuit(event.getPlayer());
@@ -299,56 +185,56 @@ public class ArtimcGameManager implements Listener {
 
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
-        Game game = getPlayerGame(event.getPlayer().getUniqueId());
+        IGame game = getPlayerGame(event.getPlayer().getUniqueId());
         if (game != null) game.onPlayerMove(event);
     }
 
     @EventHandler
     public void onPlayerDropItem(PlayerDropItemEvent event) {
-        Game game = getPlayerGame(event.getPlayer().getUniqueId());
+        IGame game = getPlayerGame(event.getPlayer().getUniqueId());
         if (game != null) game.onPlayerDropItem(event);
     }
 
     @EventHandler
     public void onPlayerGameModeChange(PlayerGameModeChangeEvent event) {
-        Game game = getPlayerGame(event.getPlayer().getUniqueId());
+        IGame game = getPlayerGame(event.getPlayer().getUniqueId());
         if (game != null) game.onPlayerGameModeChange(event);
     }
 
     @EventHandler
     public void onPlayerToggleFlight(PlayerToggleFlightEvent event) {
-        Game game = getPlayerGame(event.getPlayer().getUniqueId());
+        IGame game = getPlayerGame(event.getPlayer().getUniqueId());
         if (game != null) game.onPlayerToggleFlight(event);
     }
 
     @EventHandler
     public void onPlayerFoodLevelChange(FoodLevelChangeEvent event) {
-        Game game = getPlayerGame(event.getEntity().getUniqueId());
+        IGame game = getPlayerGame(event.getEntity().getUniqueId());
         if (game != null) game.onPlayerFoodLevelChange(event);
     }
 
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
-        Game game = getPlayerGame(event.getPlayer().getUniqueId());
+        IGame game = getPlayerGame(event.getPlayer().getUniqueId());
         if (game != null) game.onPlayerInteract(event);
     }
 
     @EventHandler
     public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
-        Game game = getPlayerGame(event.getPlayer().getUniqueId());
+        IGame game = getPlayerGame(event.getPlayer().getUniqueId());
         if (game != null) game.onPlayerInteractEntity(event);
     }
 
     @EventHandler
     public void onPlayerArmorStandManipulate(PlayerArmorStandManipulateEvent event) {
-        Game game = getPlayerGame(event.getPlayer().getUniqueId());
+        IGame game = getPlayerGame(event.getPlayer().getUniqueId());
         if (game != null) game.onPlayerArmorStandManipulate(event);
     }
 
     @EventHandler
     public void onEntityShootBow(EntityShootBowEvent event) {
         if (event.getEntity() instanceof Player) {
-            Game game = getPlayerGame(event.getEntity().getUniqueId());
+            IGame game = getPlayerGame(event.getEntity().getUniqueId());
             if (game != null) game.onPlayerShootBow(event);
         }
     }
@@ -356,7 +242,7 @@ public class ArtimcGameManager implements Listener {
     @EventHandler
     public void onProjectileHit(ProjectileHitEvent event) {
         if (event.getEntity().getShooter() instanceof Player) {
-            Game game = getPlayerGame(((Player) event.getEntity().getShooter()).getUniqueId());
+            IGame game = getPlayerGame(((Player) event.getEntity().getShooter()).getUniqueId());
             if (game != null) game.onProjectileHit(event);
         }
     }
@@ -364,7 +250,7 @@ public class ArtimcGameManager implements Listener {
     @EventHandler
     public void onEntityDamage(EntityDamageEvent event) {
         if (event.getEntity() instanceof Player) {
-            Game game = getPlayerGame(event.getEntity().getUniqueId());
+            IGame game = getPlayerGame(event.getEntity().getUniqueId());
             if (game != null) game.onPlayerDamage(event);
         }
     }
@@ -372,7 +258,7 @@ public class ArtimcGameManager implements Listener {
     @EventHandler
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
         if (event.getEntity() instanceof Player) {
-            Game game = getPlayerGame(event.getEntity().getUniqueId());
+            IGame game = getPlayerGame(event.getEntity().getUniqueId());
             Party party = getPlayerParty(event.getEntity().getUniqueId());
             // 优先处理游戏中的伤害处理
             // 其次处理队伍中的伤害处理
@@ -387,59 +273,57 @@ public class ArtimcGameManager implements Listener {
         if (!event.getPlayer().hasPermission("artimc.place.barrier") && (event.getBlock().getType() == Material.BARRIER || event.getBlock().getType() == Material.LEGACY_BARRIER))
             event.setCancelled(true);
 
-        Game game = getPlayerGame(event.getPlayer().getUniqueId());
+        IGame game = getPlayerGame(event.getPlayer().getUniqueId());
         if (game != null) game.onBlockPlace(event);
     }
 
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
-        Game game = getPlayerGame(event.getPlayer().getUniqueId());
+        IGame game = getPlayerGame(event.getPlayer().getUniqueId());
         if (game != null) game.onBlockBreak(event);
     }
 
     @EventHandler
     public void onEntityChangeBlock(EntityChangeBlockEvent event) {
-        for (Game game : new HashSet<>(games.values()))
+        for (IGame game : playerGameManager.list())
             game.onEntityChangeBlock(event);
     }
 
     @EventHandler
     public void onPlayerItemConsume(PlayerItemConsumeEvent event) {
-        Game game = getPlayerGame(event.getPlayer().getUniqueId());
+        IGame game = getPlayerGame(event.getPlayer().getUniqueId());
         if (game != null) game.onPlayerItemConsume(event);
     }
 
     @EventHandler
     public void onPlayerBucketEmpty(PlayerBucketEmptyEvent event) {
-        Game game = getPlayerGame(event.getPlayer().getUniqueId());
+        IGame game = getPlayerGame(event.getPlayer().getUniqueId());
         if (game != null) game.onPlayerBucketEmpty(event);
     }
 
     @EventHandler
     public void onPlayerRespawn(PlayerRespawnEvent event) {
-        Game game = getPlayerGame(event.getPlayer().getUniqueId());
+        IGame game = getPlayerGame(event.getPlayer().getUniqueId());
         if (game != null) game.onPlayerRespawn(event);
     }
 
     @EventHandler
     public void onPlayerDead(PlayerDeathEvent event) {
-        Game game = getPlayerGame(event.getPlayer().getUniqueId());
+        IGame game = getPlayerGame(event.getPlayer().getUniqueId());
         if (game != null) game.onPlayerDeath(event);
     }
 
     @EventHandler
     public void onPlayerChat(PlayerChatEvent event) {
-//        Party party = getPlayerParty(event.getPlayer().getUniqueId());
-//        if (!event.getMessage().isBlank() && party != null) party.onPlayerChat(event);
+        Party party = getPlayerPartyManager().get(event.getPlayer().getUniqueId());
+        if (!event.getMessage().isBlank() && party != null) party.onPlayerChat(event);
     }
 
     @EventHandler
     public void onPlayCommandSend(PlayerCommandPreprocessEvent event) {
-//        for (String cmd : getPlugin().getConfig().getStringList("chat.leave-command")) {
-//            if (event.getMessage().equals(cmd)) {
-//                disablePartyChannel(event.getPlayer().getUniqueId());
-//            }
-//        }
+        if (playerChannelManager.getCommandOfChannels().contains(event.getMessage())) {
+            playerChannelManager.remove(event.getPlayer().getUniqueId());
+        }
     }
 
 //    @EventHandler

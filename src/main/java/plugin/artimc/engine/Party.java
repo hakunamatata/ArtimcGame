@@ -12,8 +12,9 @@ import org.bukkit.event.player.PlayerChatEvent;
 import org.bukkit.plugin.Plugin;
 
 import net.kyori.adventure.text.Component;
-import plugin.artimc.ArtimcGameManager;
-import plugin.artimc.ArtimcGamePlugin;
+import plugin.artimc.ArtimcManager;
+import plugin.artimc.ArtimcPlugin;
+import plugin.artimc.common.AbstractComponent;
 import plugin.artimc.scoreboard.BaseScoreboard;
 import plugin.artimc.scoreboard.PartyScoreboard;
 
@@ -23,9 +24,7 @@ import plugin.artimc.scoreboard.PartyScoreboard;
  * 作者：Leo
  * 创建时间：2022/7/29 20:40
  */
-public class Party {
-
-    private Plugin plugin;
+public class Party extends AbstractComponent {
     private final Set<UUID> players;
     private final Set<UUID> invitees;
     private BaseScoreboard scoreboard;
@@ -35,23 +34,31 @@ public class Party {
     private PartyName partyName;
     private UUID owner;
 
-    public Party(Plugin plugin) {
-        this.plugin = plugin;
+    public static boolean isEmpty(Party party) {
+        return party == null || party.getOnlinePlayers().isEmpty();
+    }
+
+    public Party(ArtimcPlugin plugin) {
+        super(plugin);
         this.players = new HashSet<>();
         this.invitees = new HashSet<>();
         this.scoreboard = new PartyScoreboard(this);
         onCreated();
     }
 
-    public Party(Player player, Plugin plugin) {
+    public Party(Player player, ArtimcPlugin plugin) {
         this(plugin);
         this.owner = player.getUniqueId();
         join(player);
     }
 
-    public Party(Game game, Plugin plugin) {
+    public Party(Game game, ArtimcPlugin plugin) {
         this(plugin);
         this.game = game;
+    }
+
+    public Party(Game game) {
+        this(game, game.getPlugin());
     }
 
     public void setGame(Game game) {
@@ -60,10 +67,6 @@ public class Party {
 
     public void setPartyName(PartyName partyName) {
         this.partyName = partyName;
-    }
-
-    public Plugin getPlugin() {
-        return plugin;
     }
 
     /**
@@ -147,17 +150,12 @@ public class Party {
         return getLocaleString("default-party-name", false);
     }
 
-    protected ArtimcGameManager getManager() {
-        return ((ArtimcGamePlugin) plugin).getManager();
-    }
-
     public String getLocaleString(String path) {
         return getLocaleString(path, true);
     }
 
     public String getLocaleString(String path, boolean prefix) {
-        ArtimcGamePlugin p = (ArtimcGamePlugin) plugin;
-        return p.getLocaleString(path, prefix);
+        return getPlugin().getLocaleString(path, prefix);
     }
 
     public boolean isFriendlyFire() {
@@ -174,7 +172,7 @@ public class Party {
      * @return 玩家Set
      */
     public Set<UUID> getPlayers() {
-        return Collections.unmodifiableSet(players);
+        return players;
     }
 
     /**
@@ -241,7 +239,7 @@ public class Party {
      */
     protected boolean add(UUID player) throws IllegalStateException {
 
-        if (!getManager().playerJoinParty(player, this))
+        if (!getPlayerPartyManager().add(player, this))
             throw new IllegalStateException(getLocaleString("command.player-in-another-party"));
         invitees.remove(player);
         return players.add(player);
@@ -270,9 +268,17 @@ public class Party {
      */
     protected boolean remove(UUID player) {
         if (players.remove(player)) {
-            if (!getManager().playerLeaveParty(player)) {
-                plugin.getLogger().warning("player already leave team, but sync failed in manager.");
+            if (!getPlayerPartyManager().remove(player)) {
+                getLogger().warning("player already leave team, but sync failed in manager.");
             }
+            return true;
+        }
+        return false;
+    }
+
+    public boolean leave(UUID player) {
+        if (remove(player)) {
+            scoreboard.remove(player);
             return true;
         }
         return false;
@@ -407,9 +413,9 @@ public class Party {
      */
     public boolean invite(UUID player) throws IllegalStateException {
         if (players.contains(player))
-            throw new IllegalStateException(getLocaleString("command.player-already-in-party").replace("%player_name%", plugin.getServer().getPlayer(player).getName()));
-        if (getManager().playerInParty(player))
-            throw new IllegalStateException(getLocaleString("command.player-in-another-party").replace("%player_name%", plugin.getServer().getPlayer(player).getName()));
+            throw new IllegalStateException(getLocaleString("command.player-already-in-party").replace("%player_name%", getServer().getPlayer(player).getName()));
+        if (getPlayerPartyManager().contains(player))
+            throw new IllegalStateException(getLocaleString("command.player-in-another-party").replace("%player_name%", getServer().getPlayer(player).getName()));
         return invitees.add(player);
     }
 
@@ -436,7 +442,7 @@ public class Party {
      */
     public boolean uninvite(UUID player) throws IllegalStateException {
         if (players.contains(player))
-            throw new IllegalStateException(getLocaleString("command.player-already-in-party").replace("%player_name%", plugin.getServer().getPlayer(player).getName()));
+            throw new IllegalStateException(getLocaleString("command.player-already-in-party").replace("%player_name%", getServer().getPlayer(player).getName()));
         return invitees.remove(player);
     }
 
@@ -475,6 +481,11 @@ public class Party {
         }
     }
 
+    public void clear() {
+        dismiss();
+    }
+
+
     public void sendMessage(Component component) {
         for (Player p : getOnlinePlayers(players)) {
             p.sendMessage(component);
@@ -493,8 +504,8 @@ public class Party {
     public void chat(Player player, String chat) {
         if (!this.contains(player) || chat.isBlank()) return;
 
-        String format = ChatColor.translateAlternateColorCodes('&', getPlugin().getConfig().getString("chat.format"));
-        String message = format.replace("%player_name%", player.getName()).replace("%message%", chat);
+        String format = ChatColor.translateAlternateColorCodes('&', getPlayerChannelManager().getChatFormat());
+        String message = format.replace("%player_name%", player.getName()).replace("%party_name%", getName()).replace("%message%", chat);
         sendMessage(message);
     }
 
@@ -574,11 +585,11 @@ public class Party {
      * @return
      */
     private Player getOnlinePlayer(UUID uuid) {
-        return plugin.getServer().getPlayer(uuid);
+        return getServer().getPlayer(uuid);
     }
 
     private OfflinePlayer getOfflinePlayer(UUID uuid) {
-        return plugin.getServer().getOfflinePlayer(uuid);
+        return getServer().getOfflinePlayer(uuid);
     }
 
     /**
@@ -601,6 +612,16 @@ public class Party {
     public void showTitle(String title, String subTitle) {
         for (Player player : getOnlinePlayers()) {
             player.sendTitle(title, subTitle, 20, 60, 20);
+        }
+    }
+
+    public void trim() {
+        UUID[] players = getPlayers().toArray(new UUID[0]).clone();
+        for (UUID p : players) {
+            OfflinePlayer player = getServer().getOfflinePlayer(p);
+            if (!player.isOnline()) {
+                leave(player);
+            }
         }
     }
 
@@ -667,9 +688,9 @@ public class Party {
      * @param player
      */
     protected void onPlayerLeaveParty(Player player) {
-        if (game != null) {
-            game.leaveGame(player);
-        }
+//        if (game != null) {
+//            game.leaveGame(player);
+//        }
         updateScoreboardOnPlayerEvent(player);
     }
 
@@ -704,7 +725,7 @@ public class Party {
      * @param event
      */
     public void onPlayerChat(PlayerChatEvent event) {
-        if (getManager().isPlayerEnabledPartyChannel(event.getPlayer().getUniqueId())) {
+        if (getPlayerChannelManager().get(event.getPlayer().getUniqueId())) {
             chat(event.getPlayer(), event.getMessage());
             event.setCancelled(true);
         }
