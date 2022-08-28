@@ -21,43 +21,43 @@ public class GameCommandContext extends CommandContext {
         if (getArgs().length == 0)
             return new DefaultCommand(this);
 
-        if (getArgs()[0].equals(this.getCommandCofniguration().getString("join")))
+        if (getArgs()[0].equals(this.getCommandConfiguration().getString("join")))
             return new JoinCommand(this);
 
-        if (getArgs()[0].equals(this.getCommandCofniguration().getString("ready")))
+        if (getArgs()[0].equals(this.getCommandConfiguration().getString("ready")))
             return new ReadyCommand(this);
 
-        if (getArgs()[0].equals(this.getCommandCofniguration().getString("unready")))
+        if (getArgs()[0].equals(this.getCommandConfiguration().getString("unready")))
             return new UnreadyCommand(this);
 
-        if (getArgs()[0].equals(this.getCommandCofniguration().getString("rule")))
+        if (getArgs()[0].equals(this.getCommandConfiguration().getString("rule")))
             return new RuleCommand(this);
 
-        if (getArgs()[0].equals(this.getCommandCofniguration().getString("move")))
+        if (getArgs()[0].equals(this.getCommandConfiguration().getString("move")))
             return new MoveCommand(this);
 
-        if (getArgs()[0].equals(this.getCommandCofniguration().getString("set")))
+        if (getArgs()[0].equals(this.getCommandConfiguration().getString("set")))
             return new SetCommand(this);
 
-        if (getArgs()[0].equals(this.getCommandCofniguration().getString("save")))
+        if (getArgs()[0].equals(this.getCommandConfiguration().getString("save")))
             return new SaveCommand(this);
 
-        if (getArgs()[0].equals(this.getCommandCofniguration().getString("leave")))
+        if (getArgs()[0].equals(this.getCommandConfiguration().getString("leave")))
             return new LeaveCommand(this);
 
-        if (getArgs()[0].equals(this.getCommandCofniguration().getString("reload")))
+        if (getArgs()[0].equals(this.getCommandConfiguration().getString("reload")))
             return new ReloadCommand(this);
 
         return new DefaultCommand(this);
     }
 
     @Override
-    public ConfigurationSection getCommandCofniguration() {
+    public ConfigurationSection getCommandConfiguration() {
         return this.getPlugin().getConfig().getConfigurationSection("commands.game");
     }
 
     @Override
-    public ConfigurationSection getParameterCofniguration() {
+    public ConfigurationSection getParameterConfiguration() {
         return this.getPlugin().getConfig().getConfigurationSection("params.game");
     }
 

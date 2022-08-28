@@ -17,7 +17,7 @@ data:
 
 #队伍聊天频道设置
 chat:
-  format: "&b[队伍] %player_name%: %message%"
+  format: "&b[%party_name%] %player_name%: %message%"
   #离开聊天频道的指令，不包含/pm
   leave-command:
     - /g
@@ -83,6 +83,7 @@ commands:
     reload: 重载
     leave: 离开
     mode: 模式
+  pm:
 
 params:
   admin:
@@ -95,6 +96,7 @@ params:
       host: 主队
       guest: 客队
       observer: 观察者
+    pm:
     set:
       default-spawn: 默认出生点
       host-spawn: 主队出生点

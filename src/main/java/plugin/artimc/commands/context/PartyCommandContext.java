@@ -12,7 +12,7 @@ import plugin.artimc.commands.executor.party.*;
 public class PartyCommandContext extends CommandContext {
 
     public PartyCommandContext(@NotNull CommandSender sender, @NotNull Command command, String label, String[] args,
-            Plugin plugin) {
+                               Plugin plugin) {
         super(sender, command, label, args, plugin);
     }
 
@@ -21,46 +21,46 @@ public class PartyCommandContext extends CommandContext {
         if (getArgs().length == 0)
             return new DefaultCommand(this);
 
-        if (getArgs()[0].equals(this.getCommandCofniguration().getString("create")))
+        if (getArgs()[0].equals(this.getCommandConfiguration().getString("create")))
             return new CreateCommand(this);
 
-        if (getArgs()[0].equals(this.getCommandCofniguration().getString("list")))
+        if (getArgs()[0].equals(this.getCommandConfiguration().getString("list")))
             return new ListCommand(this);
 
-        if (getArgs()[0].equals(this.getCommandCofniguration().getString("join")))
+        if (getArgs()[0].equals(this.getCommandConfiguration().getString("join")))
             return new JoinCommand(this);
 
-        if (getArgs()[0].equals(this.getCommandCofniguration().getString("invite")))
+        if (getArgs()[0].equals(this.getCommandConfiguration().getString("invite")))
             return new InviteCommand(this);
 
-        if (getArgs()[0].equals(this.getCommandCofniguration().getString("dismiss")))
+        if (getArgs()[0].equals(this.getCommandConfiguration().getString("dismiss")))
             return new DissmissCommand(this);
 
-        if (getArgs()[0].equals(this.getCommandCofniguration().getString("kick")))
+        if (getArgs()[0].equals(this.getCommandConfiguration().getString("kick")))
             return new KickCommand(this);
 
-        if (getArgs()[0].equals(this.getCommandCofniguration().getString("transfer")))
+        if (getArgs()[0].equals(this.getCommandConfiguration().getString("transfer")))
             return new TransferCommand(this);
 
-        if (getArgs()[0].equals(this.getCommandCofniguration().getString("leave")))
+        if (getArgs()[0].equals(this.getCommandConfiguration().getString("leave")))
             return new LeaveCommand(this);
 
-        if (getArgs()[0].equals(this.getCommandCofniguration().getString("set")))
+        if (getArgs()[0].equals(this.getCommandConfiguration().getString("set")))
             return new SetCommand(this);
 
-        if (getArgs()[0].equals(this.getCommandCofniguration().getString("rename")))
+        if (getArgs()[0].equals(this.getCommandConfiguration().getString("rename")))
             return new RenameCommand(this);
 
         return new DefaultCommand(this);
     }
 
     @Override
-    public ConfigurationSection getCommandCofniguration() {
+    public ConfigurationSection getCommandConfiguration() {
         return this.getPlugin().getConfig().getConfigurationSection("commands.party");
     }
 
     @Override
-    public ConfigurationSection getParameterCofniguration() {
+    public ConfigurationSection getParameterConfiguration() {
         return this.getPlugin().getConfig().getConfigurationSection("params.party");
     }
 

@@ -42,9 +42,7 @@ public class PvPGameScoreboard extends GameScoreboard {
     private String displayDouble(double n) {
         if (n < 1000.00) return String.format("%.2f", n) + " ";
         if (n < 10000.00) return String.format("%.2f", n / 1000) + "k";
-        if (n < 100000.00) return String.format("%.2f", n / 10000) + "w";
-
-        return ">10w ";
+        return ">1w ";
     }
 
     private boolean playerInHost(Player player) {
@@ -108,7 +106,7 @@ public class PvPGameScoreboard extends GameScoreboard {
 
     private @NotNull String writePlayerData(Player player) {
         String temp = "  %player_name%  &6%damages%  &a%kill%   &e%assist%   &c%dead% ";
-        return ChatColor.translateAlternateColorCodes('&', temp.replace("%player_name%", displayPlayerName(player)).replace("%damages%", displayDouble(getGame().getPvPStatstic() == null ? 0 : getGame().getPvPStatstic().getPlayerCausedDamage(player))).replace("%kill%", displayNumber(getGame().getPvPStatstic() == null ? 0 : getGame().getPvPStatstic().getPlayerKills(player))).replace("%assist%", displayNumber(getGame().getPvPStatstic() == null ? 0 : getGame().getPvPStatstic().getPlayerAssits(player))).replace("%dead%", displayNumber(getGame().getPvPStatstic() == null ? 0 : getGame().getPvPStatstic().getPlayerDeaths(player))));
+        return ChatColor.translateAlternateColorCodes('&', temp.replace("%player_name%", displayPlayerName(player)).replace("%damages%", displayDouble(getGame().getPvPSStatistic() == null ? 0 : getGame().getPvPSStatistic().getPlayerCausedDamage(player))).replace("%kill%", displayNumber(getGame().getPvPSStatistic() == null ? 0 : getGame().getPvPSStatistic().getPlayerKills(player))).replace("%assist%", displayNumber(getGame().getPvPSStatistic() == null ? 0 : getGame().getPvPSStatistic().getPlayerAssits(player))).replace("%dead%", displayNumber(getGame().getPvPSStatistic() == null ? 0 : getGame().getPvPSStatistic().getPlayerDeaths(player))));
 
     }
 
@@ -145,11 +143,11 @@ public class PvPGameScoreboard extends GameScoreboard {
         list.add(" ");
 
         if (guestParty != null) {
-            String hostPerf = displayDouble(0.00);
+            String hostPerf = String.format("%.0f", 0.00);
             if (hostParty != null)
-                hostPerf = hostParty.getPartyName().getChatColor() + displayDouble(getGame().getPvPStatstic().getPartyPerformance(hostParty));
-            String guestPerf = guestParty.getPartyName().getChatColor() + displayDouble(getGame().getPvPStatstic().getPartyPerformance(guestParty));
-            list.add(ChatColor.translateAlternateColorCodes('&', "             &l%hostPerf%  &f&lVS  &l%guestPerf%  ").replace("%hostPerf%", hostPerf).replace("%guestPerf%", guestPerf));
+                hostPerf = hostParty.getPartyName().getChatColor() + String.format("%.0f", getGame().getPvPSStatistic().getPartyPerformance(hostParty));
+            String guestPerf = guestParty.getPartyName().getChatColor() + String.format("%.0f", getGame().getPvPSStatistic().getPartyPerformance(guestParty));
+            list.add(ChatColor.translateAlternateColorCodes('&', "                   &l%hostPerf%  &f&lVS  &l%guestPerf%  ").replace("%hostPerf%", hostPerf).replace("%guestPerf%", guestPerf));
             list.add(guestParty.getPartyName().toString() + guestPartyString.replace("%party_custom_name%", guestParty.getName()));
             list.addAll(getPartyMemberStatus(guestParty));
         }
@@ -168,27 +166,4 @@ public class PvPGameScoreboard extends GameScoreboard {
         return list;
     }
 
-    @Override
-    public void updateContent() {
-        for (Player selectPlayer : game.getOnlinePlayers()) {
-            Scoreboard sb = selectPlayer.getScoreboard();
-            Party hostParty = getGame().getHostParty();
-            Party guestParty = getGame().getGuestParty();
-            if (hostParty != null && guestParty != null) {
-                Team host = (sb.getTeam(hostParty.getPartyName().toString()) == null) ? sb.registerNewTeam(hostParty.getPartyName().toString()) : sb.getTeam(hostParty.getPartyName().toString());
-                Team guest = (sb.getTeam(guestParty.getPartyName().toString()) == null) ? sb.registerNewTeam(guestParty.getPartyName().toString()) : sb.getTeam(guestParty.getPartyName().toString());
-                host.setColor(hostParty.getPartyName().getChatColor());
-                guest.setColor(guestParty.getPartyName().getChatColor());
-                for (Player ePlayer : game.getOnlinePlayers()) {
-                    if (!(host.hasPlayer(ePlayer)) && (hostParty.contains(ePlayer.getUniqueId()))) {
-                        host.addPlayer(ePlayer);
-                    } else if (!(guest.hasPlayer(ePlayer)) && guestParty.contains(ePlayer.getUniqueId()))
-                        guest.addPlayer(ePlayer);
-                }
-                host.setPrefix(hostParty.getPartyName().toString() + " " + hostParty.getName());
-                guest.setPrefix(guestParty.getPartyName().toString() + " " + guestParty.getName());
-            }
-            super.updateContent();
-        }
-    }
 }

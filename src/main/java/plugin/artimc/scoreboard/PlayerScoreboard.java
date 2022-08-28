@@ -27,7 +27,7 @@ public class PlayerScoreboard {
 
     private final Objective objective;
 
-    private static final String NAME = "game";
+    public static final String DEFAULT_TRAM_NAME = "game";
 
     private List<String> oldLines;
 
@@ -36,8 +36,8 @@ public class PlayerScoreboard {
     public PlayerScoreboard(ScoreboardManager manager) {
         this.scoreboard = manager.getNewScoreboard();
         this.oldLines = new ArrayList<>();
-        this.objective = scoreboard.registerNewObjective(NAME, "dummy", NAME);
-        this.team = scoreboard.registerNewTeam(NAME);
+        this.objective = scoreboard.registerNewObjective(DEFAULT_TRAM_NAME, "dummy", DEFAULT_TRAM_NAME);
+        this.team = scoreboard.registerNewTeam(DEFAULT_TRAM_NAME);
         objective.setDisplaySlot(DisplaySlot.SIDEBAR);
     }
 

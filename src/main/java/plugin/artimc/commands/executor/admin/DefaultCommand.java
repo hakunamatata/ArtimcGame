@@ -18,11 +18,11 @@ public class DefaultCommand extends CommandExecutor {
     }
 
     protected String getCommandString(String path) {
-        return getContext().getCommandCofniguration().getString(path);
+        return getContext().getCommandConfiguration().getString(path);
     }
 
     protected String getParamsString(String path) {
-        return getContext().getParameterCofniguration().getString(path);
+        return getContext().getParameterConfiguration().getString(path);
     }
 
     @Override

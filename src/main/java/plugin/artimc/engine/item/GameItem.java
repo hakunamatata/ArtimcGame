@@ -73,6 +73,8 @@ public class GameItem implements Listener {
         try {
             // 玩家不在当前游戏中，不处理
             if (!game.contains(event.getPlayer())) return;
+            // 游戏不在进行中，不处理
+            if (!game.isGaming()) return;
             // 玩家所在世界与当前游戏所在世界不同，不处理
             if (!event.getPlayer().getWorld().equals(game.getGameMap().getWorld())) return;
             // 数据为准备，不处理

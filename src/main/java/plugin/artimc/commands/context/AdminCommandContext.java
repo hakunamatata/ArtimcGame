@@ -17,7 +17,7 @@ public class AdminCommandContext extends CommandContext {
     }
 
     @Override
-    public ConfigurationSection getCommandCofniguration() {
+    public ConfigurationSection getCommandConfiguration() {
         return this.getPlugin().getConfig().getConfigurationSection("commands.admin");
     }
 
@@ -27,20 +27,20 @@ public class AdminCommandContext extends CommandContext {
         if (getArgs().length == 0)
             return new DefaultCommand(this);
 
-        if (getArgs()[0].equals(this.getCommandCofniguration().getString("party")))
+        if (getArgs()[0].equals(this.getCommandConfiguration().getString("party")))
             return new PartyCommand(this);
 
-        if (getArgs()[0].equals(this.getCommandCofniguration().getString("games")))
+        if (getArgs()[0].equals(this.getCommandConfiguration().getString("games")))
             return new GamesCommand(this);
 
-        if (getArgs()[0].equals(this.getCommandCofniguration().getString("player")))
+        if (getArgs()[0].equals(this.getCommandConfiguration().getString("player")))
             return new PlayerCommand(this);
 
         return new DefaultCommand(this);
     }
 
     @Override
-    public ConfigurationSection getParameterCofniguration() {
+    public ConfigurationSection getParameterConfiguration() {
         return this.getPlugin().getConfig().getConfigurationSection("params.admin");
     }
 
