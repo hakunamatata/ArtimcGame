@@ -1,9 +1,6 @@
 package plugin.artimc.instance;
 
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.boss.BarColor;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -30,7 +27,7 @@ public class LogFactoryGame extends PvPGame {
     private int resPeriod;
     private int resFreq;
     private List<String> items;
-    private int scoreMultipler;
+    private int scoreMultiplier;
 
     public LogFactoryGame(String pvpGameName, ArtimcPlugin plugin) {
         super(pvpGameName, plugin);
@@ -42,7 +39,7 @@ public class LogFactoryGame extends PvPGame {
         items = getGameMap().getResourceItems();
         resPeriod = getGameMap().getResourceTimerPeriod();
         resFreq = getGameMap().getResourceTimerFreq();
-        scoreMultipler = 1;
+        scoreMultiplier = 1;
         super.onInitialization();
     }
 
@@ -63,21 +60,21 @@ public class LogFactoryGame extends PvPGame {
                 String lots = raw.split(";")[1];
                 int extra;
                 try {
-                    extra = Integer.valueOf(raw.split(";")[2]);
+                    extra = Integer.parseInt(raw.split(";")[2]);
                 } catch (Exception ex) {
                     extra = 0;
                 }
                 String mn = Utils.getRandomElement(Arrays.stream(mats.split(",")).toList());
                 material = Material.valueOf(mn.split(":")[0].toUpperCase());
-                amount = Integer.valueOf(mn.split(":")[1]);
+                amount = Integer.parseInt(mn.split(":")[1]);
                 world = getPlugin().getServer().getWorld(getGameMap().getWorldName());
-                loc = new Location(world, Integer.valueOf(lots.split(",")[0]), Integer.valueOf(lots.split(",")[1]), Integer.valueOf(lots.split(",")[2]));
+                loc = new Location(world, Integer.parseInt(lots.split(",")[0]), Integer.parseInt(lots.split(",")[1]), Integer.parseInt(lots.split(",")[2]));
 
-                dropItem(new ItemStack(material, amount), loc).setItemMeta("extra-score", extra * scoreMultipler);
+                dropItem(new ItemStack(material, amount), loc).setItemMeta("extra-score", extra * scoreMultiplier);
+                assert world != null;
                 log(String.format("资源已生成：%s:%s, 地点：%s, %s %s %s", material, amount, world.getName(), loc.getX(), loc.getY(), loc.getZ()));
-                scoreMultipler *= 2;
-
             }
+            scoreMultiplier *= 2;
         } catch (Exception ex) {
             getPlugin().getLogger().warning(ex.getMessage());
         }
@@ -133,8 +130,12 @@ public class LogFactoryGame extends PvPGame {
 
     @Override
     public void onGameItemPickup(GameItemPickupEvent event) {
-        // 对Ob无效
-        if (!getObserveParty().contains(event.getPlayer())) {
+        if (
+            // 对Ob无效
+                !getObserveParty().contains(event.getPlayer()) &&
+                        // 对观察者无效
+                        !event.getPlayer().getGameMode().equals(GameMode.SPECTATOR)
+        ) {
             int score = (int) event.getItem().getItemMeta("extra-score");
             Party party = getManager().getPlayerParty(event.getPlayer());
             getPvPSStatistic().addPartyScore(party, score);

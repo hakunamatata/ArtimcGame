@@ -8,5 +8,4 @@ public class Mechanism extends AbstractMechanism {
     protected void remove() {
         getGame().getMechanisms().remove(this);
     }
-
 }
