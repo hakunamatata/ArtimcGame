@@ -295,6 +295,7 @@ public abstract class Game extends GameRunnable implements IGameListener {
 
     public void onPartyLeaveGame(PartyLeaveGameEvent event) {
         event.getParty().sendMessage(getGameLocaleString("game-is-closed"));
+        getCompanion().getGameParties().remove(event.getParty().getPartyName());
         event.getParty().setGame(null);
         event.getParty().setPartyName(null);
         event.getParty().setScoreboard(new PartyScoreboard(getObserveParty().getScoreboard(), event.getParty()));
@@ -427,7 +428,7 @@ public abstract class Game extends GameRunnable implements IGameListener {
      */
     public void onPlayerQuit(final PlayerQuitEvent event) {
         // 玩家在游戏过程中退出，设置生成位置为大厅
-        event.getPlayer().setBedSpawnLocation(getGameMap().getLobby(), true);
+        //event.getPlayer().setBedSpawnLocation(getGameMap().getLobby(), true);
         // 玩家在游戏过程中退出视为离开游戏，且离开队伍
         event.getPlayer().setGlowing(false);
         // 玩家下线 表示离开游戏

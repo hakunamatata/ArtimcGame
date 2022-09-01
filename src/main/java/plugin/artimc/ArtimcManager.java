@@ -162,7 +162,7 @@ public class ArtimcManager implements IComponent, Listener {
             Boolean forceSpawnLobby = getPlugin().getConfig().getBoolean("settings.force-spawn-lobby", false);
             if (forceSpawnLobby) {
                 Location lobby = Utils.loadLocation(getPlugin().getConfig().getConfigurationSection("lobby"));
-                event.getPlayer().setBedSpawnLocation(lobby, true);
+                //event.getPlayer().setBedSpawnLocation(lobby, true);
                 event.getPlayer().teleport(lobby);
             }
         }
@@ -177,7 +177,6 @@ public class ArtimcManager implements IComponent, Listener {
 
         if (party != null) {
             party.onPlayerQuit(event.getPlayer());
-
         }
 
         if (game != null) game.onPlayerQuit(event);

@@ -357,7 +357,7 @@ public class PvPStatstic {
     public String getPartySummary(Party party) {
         String summary = game.getPlugin().getLocaleString("game.party-summary-pvp-game-finish", false);
         return summary
-                .replace("%party_name%", party.getPartyName().toString() + party.getName())
+                .replace("%party_name%", party.getName())
                 .replace("%damages%", String.format("%.2f", getPartyCausedDamage(party)))
                 .replace("%kills%", String.valueOf(getPartyKills(party)))
                 .replace("%deaths%", String.valueOf(getPartyDeaths(party)))

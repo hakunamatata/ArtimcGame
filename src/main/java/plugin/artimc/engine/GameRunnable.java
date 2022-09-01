@@ -1,9 +1,6 @@
 package plugin.artimc.engine;
 
-import org.bukkit.ChatColor;
-import org.bukkit.GameRule;
-import org.bukkit.OfflinePlayer;
-import org.bukkit.Server;
+import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
@@ -22,10 +19,7 @@ import plugin.artimc.engine.timer.internal.GamePeriodTimer;
 import plugin.artimc.engine.timer.internal.WaitPeriodTimer;
 import plugin.artimc.engine.world.GameWorld;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
@@ -115,6 +109,8 @@ public abstract class GameRunnable extends BukkitRunnable implements IGame {
         gameWorld.getWorld().setGameRule(GameRule.DO_WEATHER_CYCLE, false);
         // 观察者不生成区块
         gameWorld.getWorld().setGameRule(GameRule.SPECTATORS_GENERATE_CHUNKS, false);
+        // 立即复活
+        gameWorld.getWorld().setGameRule(GameRule.DO_IMMEDIATE_RESPAWN, true);
         // 永远白天
         gameWorld.getWorld().setTime(6000);
     }

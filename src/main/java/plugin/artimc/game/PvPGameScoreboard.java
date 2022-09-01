@@ -75,7 +75,7 @@ public class PvPGameScoreboard extends GameScoreboard {
             // 游戏其他状态
             else {
                 // 名字颜色使用 队伍颜色
-                color = party.getPartyName().toString();
+                color = party.getChatColor() + "";
             }
 
         } else if (playerInGuest(player)) {
@@ -94,7 +94,7 @@ public class PvPGameScoreboard extends GameScoreboard {
             // 游戏其他状态
             else {
                 // 名字颜色使用 队伍颜色
-                color = party.getPartyName().toString();
+                color = party.getChatColor() + "";
             }
         }
 
@@ -136,7 +136,7 @@ public class PvPGameScoreboard extends GameScoreboard {
         if (hostParty != null) {
             list.add(" ");
             list.add(ChatColor.translateAlternateColorCodes('&', "             &6伤害  &a击杀  &e助攻  &4死亡    "));
-            list.add(hostParty.getPartyName().toString() + hostPartyName.replace("%party_custom_name%", hostParty.getName()));
+            list.add(hostParty.getChatColor() + hostPartyName.replace("%party_custom_name%", hostParty.getName()));
             list.addAll(getPartyMemberStatus(hostParty));
         }
 
@@ -145,10 +145,10 @@ public class PvPGameScoreboard extends GameScoreboard {
         if (guestParty != null) {
             String hostPerf = String.format("%.0f", 0.00);
             if (hostParty != null)
-                hostPerf = hostParty.getPartyName().getChatColor() + String.format("%.0f", getGame().getPvPSStatistic().getPartyPerformance(hostParty));
-            String guestPerf = guestParty.getPartyName().getChatColor() + String.format("%.0f", getGame().getPvPSStatistic().getPartyPerformance(guestParty));
+                hostPerf = hostParty.getChatColor() + String.format("%.0f", getGame().getPvPSStatistic().getPartyPerformance(hostParty));
+            String guestPerf = guestParty.getChatColor() + String.format("%.0f", getGame().getPvPSStatistic().getPartyPerformance(guestParty));
             list.add(ChatColor.translateAlternateColorCodes('&', "                   &l%hostPerf%  &f&lVS  &l%guestPerf%  ").replace("%hostPerf%", hostPerf).replace("%guestPerf%", guestPerf));
-            list.add(guestParty.getPartyName().toString() + guestPartyString.replace("%party_custom_name%", guestParty.getName()));
+            list.add(guestParty.getChatColor() + guestPartyString.replace("%party_custom_name%", guestParty.getName()));
             list.addAll(getPartyMemberStatus(guestParty));
         }
 

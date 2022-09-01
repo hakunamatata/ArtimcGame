@@ -1,15 +1,19 @@
 package plugin.artimc.engine.mechanism;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.title.TitlePart;
 import org.bukkit.ChatColor;
-import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.GameMode;
+import org.bukkit.Location;
+import org.bukkit.entity.Player;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import plugin.artimc.engine.IGame;
 import plugin.artimc.engine.Mechanism;
 import plugin.artimc.engine.timer.effect.PlayerEffect;
+import plugin.artimc.engine.title.BlinkTitle;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * 玩家复活
@@ -17,59 +21,72 @@ import java.util.UUID;
  * 移动限制
  */
 public class PlayerRespawn extends Mechanism {
-
     /**
      * 被冻结的玩家
      */
-    private final Set<UUID> frozenPlayers;
+    private final Map<UUID, Location> playerDeadLocations;
+    private final Set<UUID> spectators;
 
     public PlayerRespawn(IGame game) {
         super(game);
-        frozenPlayers = new HashSet<>();
+        playerDeadLocations = new HashMap<>();
+        spectators = new HashSet<>();
         getLogger().info(" * use player respawn mechanism");
     }
 
     @Override
     public void onPlayerRespawn(PlayerRespawnEvent event) {
+        UUID player = event.getPlayer().getUniqueId();
+        if (playerDeadLocations.containsKey(player)) {
+            // 立即从死亡地点复活
+            event.setRespawnLocation(playerDeadLocations.get(player));
+        }
+        super.onPlayerRespawn(event);
+        spectators.add(player);
+
+        // 复活之后, 如果游戏还在进行中
         if (getGame().isGaming()) {
-            frozenPlayers.add(event.getPlayer().getUniqueId());
-            getGame().givePlayerEffect(new PlayerEffect("player-respawn-mechanism", event.getPlayer(), 5, getGame()) {
+            getGame().givePlayerEffect(new PlayerEffect("player-respawn-mechanism", event.getPlayer(), 10, getGame()) {
                 @Override
                 protected void onStart() {
-                    if (getGame().isGaming()) {
-                        frozenPlayers.add(event.getPlayer().getUniqueId());
-                        event.getPlayer().sendTitle(String.format(ChatColor.GREEN + "%s 秒后解除限制", getCurrent()), String.format(ChatColor.GRAY + "你刚复活，还很虚弱..."), 10, 10, 10);
+                    if (spectators.contains(getPlayer().getUniqueId())) {
+                        getPlayer().setGameMode(GameMode.SPECTATOR);
+                        getPlayer().sendMessage(String.format(ChatColor.RED + "你被击杀， %s 秒后复活", getCurrent()));
                     }
                     super.onStart();
                 }
 
                 @Override
-                protected void onUpdate() {
-                    if (getGame().isGaming()) {
-                        event.getPlayer().sendTitle(String.format(ChatColor.GREEN + "%s 秒后解除限制", getCurrent()), String.format(ChatColor.GRAY + "你刚复活，还很虚弱..."), 10, 10, 10);
-                    }
-                    super.onUpdate();
-                }
-
-                @Override
                 protected void onFinish() {
-                    frozenPlayers.remove(event.getPlayer().getUniqueId());
+                    reset(getPlayer());
                     super.onFinish();
                 }
             });
         }
-        super.onPlayerRespawn(event);
+        // 如果游戏已经结束
+        else {
+            event.getPlayer().setGameMode(GameMode.SURVIVAL);
+        }
+    }
+
+    private void reset(Player player) {
+        playerDeadLocations.remove(player.getUniqueId());
+        spectators.remove(player.getUniqueId());
+        player.teleport(getGame().getRespawnLocation(player));
+        player.setGameMode(GameMode.SURVIVAL);
+        player.sendTitlePart(TitlePart.SUBTITLE, Component.text(ChatColor.GREEN + "你已复活"));
+        player.sendTitlePart(TitlePart.TIMES, new BlinkTitle());
     }
 
     @Override
-    public void onPlayerMove(PlayerMoveEvent event) {
-        if (getGame().isGaming() && frozenPlayers.contains(event.getPlayer().getUniqueId())) event.setCancelled(true);
-        super.onPlayerMove(event);
+    public void onPlayerDeath(PlayerDeathEvent event) {
+        playerDeadLocations.put(event.getPlayer().getUniqueId(), event.getPlayer().getLocation());
+        super.onPlayerDeath(event);
     }
 
     @Override
     protected void remove() {
-        frozenPlayers.clear();
+        playerDeadLocations.clear();
         super.remove();
     }
 }

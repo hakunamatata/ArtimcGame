@@ -1,11 +1,13 @@
 package plugin.artimc.engine;
 
+import org.bukkit.Location;
 import org.bukkit.Server;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.player.*;
+import org.jetbrains.annotations.NotNull;
 import plugin.artimc.ArtimcManager;
 import plugin.artimc.ArtimcPlugin;
 import plugin.artimc.common.IComponent;
@@ -89,6 +91,8 @@ public interface IGame extends Runnable, IComponent, AutoCloseable {
     boolean playerHasEffect(String name, Player player);
 
     void removePlayerEffect(String name, Player player);
+
+    @NotNull Location getRespawnLocation(Player player);
 
     /**
      * This will be called when a player in this game joins the server

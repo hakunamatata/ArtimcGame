@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.boss.BarColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockPlaceEvent;
@@ -254,11 +255,27 @@ public class PvPGame extends Game {
      */
     @Override
     public void onPartyLeaveGame(PartyLeaveGameEvent event) {
-        if (getGameParties().size() == 1) {
-            // 将当前仅剩的队伍设为主队
-            hostPartyName = ((Party) getGameParties().values().toArray()[0]).getPartyName();
-            guestPartyName = null;
+
+        try {
+            Party hostParty = getHostParty();
+            Party guestParty = getGuestParty();
+            // 主队离开
+            if (event.getParty().equals(hostParty)) {
+                if (guestParty != null) {
+                    // 将主队设置为现有的客队
+                    hostPartyName = guestParty.getPartyName();
+                    // 将现有的客队设置为空
+                    guestPartyName = null;
+                }
+            }
+            // 客队离开
+            else if (event.getParty().equals(guestParty)) {
+                guestPartyName = null;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+
         super.onPartyLeaveGame(event);
     }
 
@@ -419,18 +436,32 @@ public class PvPGame extends Game {
     }
 
     @Override
-    public void onPlayerRespawn(PlayerRespawnEvent event) {
-        int period = getGameMap().getInvinciblePeriod();
-        Player player = event.getPlayer();
+    public Location getRespawnLocation(Player player) {
         if (getHostParty().contains(player)) {
-            event.setRespawnLocation(getGameMap().getSpawn().get("host"));
-            givePlayerEffect(new PvPGameInvincibleEffect(player, period, this));
-        } else if (getGuestParty().contains(player)) {
-            event.setRespawnLocation(getGameMap().getSpawn().get("guest"));
-            givePlayerEffect(new PvPGameInvincibleEffect(player, period, this));
-        } else event.setRespawnLocation(getGameMap().getSpawn().get("default"));
-        super.onPlayerRespawn(event);
+            return getMap().getSpawn().get("host");
+        }
+
+        if (getGuestParty().contains(player)) {
+            return getMap().getSpawn().get("guest");
+        }
+
+        return null;
     }
+
+    //
+//    @Override
+//    public void onPlayerRespawn(PlayerRespawnEvent event) {
+//        int period = getGameMap().getInvinciblePeriod();
+//        Player player = event.getPlayer();
+//        if (getHostParty().contains(player)) {
+//            event.setRespawnLocation(getGameMap().getSpawn().get("host"));
+//            givePlayerEffect(new PvPGameInvincibleEffect(player, period, this));
+//        } else if (getGuestParty().contains(player)) {
+//            event.setRespawnLocation(getGameMap().getSpawn().get("guest"));
+//            givePlayerEffect(new PvPGameInvincibleEffect(player, period, this));
+//        } else event.setRespawnLocation(getGameMap().getSpawn().get("default"));
+//        super.onPlayerRespawn(event);
+//    }
 
     @Override
     public void onPlayerDamageByPlayer(Player player, Player damager, EntityDamageByEntityEvent eventSource) {
@@ -469,27 +500,9 @@ public class PvPGame extends Game {
      */
     @Override
     public void onPlayerJoin(PlayerJoinEvent event) {
-        Player player = event.getPlayer();
-        Party party = getManager().getPlayerParty(player);
-        // 但是玩家的队伍已经不存在了，结束游戏
-        if (party == null) {
-            removeCompanion(player);
-            player.teleport(getGameMap().getLobby());
-            player.setBedSpawnLocation(getGameMap().getLobby(), true);
-            player.setGameMode(GameMode.SURVIVAL);
-        }
-        // 玩家在队伍还在，游戏还在继续
-        else {
-            if (isGaming()) {
-                if (party.equals(getHostParty())) {
-                    player.teleport(getGameMap().getSpawn().get("host"));
-                } else if (party.equals(getGuestParty())) {
-                    player.teleport(getGameMap().getSpawn().get("guest"));
-                }
-            } else {
-                player.teleport(getGameMap().getSpawn().get("default"));
-            }
-        }
+        /**
+         * xxx
+         */
         super.onPlayerJoin(event);
     }
 

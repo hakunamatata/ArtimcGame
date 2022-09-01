@@ -196,15 +196,12 @@ public class Companion {
      * @param player
      */
     public void removeCompanion(UUID player) {
-        Party party = getManager().getPlayerParty(player);
+        Party party = getManager().getPlayerPartyManager().get(player);
         // 如果玩家当前在一个队伍中
         if (party != null && party.contains(player)) {
             party.leave(player);
             if (party.getOnlinePlayers().isEmpty()) {
                 game.onPartyLeaveGame(new PartyLeaveGameEvent(game, party));
-                parties.remove(party.getPartyName());
-                party.setGame(null);
-                party.setPartyName(null);
                 party.dismiss();
             }
         }

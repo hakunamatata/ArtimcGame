@@ -2,6 +2,7 @@ package plugin.artimc.engine;
 
 import java.util.*;
 
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
@@ -105,6 +106,16 @@ public class Party extends AbstractComponent {
         return partyName;
     }
 
+    public ChatColor getChatColor() {
+        if (partyName == null) return ChatColor.WHITE;
+        return partyName.getChatColor();
+    }
+
+    public NamedTextColor getNamedTextColor() {
+        if (partyName == null) return NamedTextColor.WHITE;
+        return partyName.getNamedTextColor();
+    }
+
     private String getNameText() {
         if (customName != null && !customName.isBlank()) {
             return customName;
@@ -123,7 +134,7 @@ public class Party extends AbstractComponent {
     public String getName(boolean withoutFormat) {
         if (withoutFormat) return getNameText();
 
-        String color = "§f";
+        ChatColor color = ChatColor.WHITE;
         if (customName != null && !customName.isBlank()) {
             if (game != null && partyName != null) {
                 return partyName + "§o" + customName + "§r";
@@ -133,7 +144,7 @@ public class Party extends AbstractComponent {
         }
 
         if (game != null && partyName != null) {
-            color = partyName.toString();
+            color = partyName.getChatColor();
             return color + partyName.getName();
         }
 
@@ -513,6 +524,7 @@ public class Party extends AbstractComponent {
         String message = format.replace("%player_name%", player.getName()).replace("%party_name%", getName(true)).replace("%message%", chat);
         sendMessage(message);
     }
+
 
     /**
      * 更新队伍中的计分板

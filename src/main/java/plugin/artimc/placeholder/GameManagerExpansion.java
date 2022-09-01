@@ -93,7 +93,10 @@ public class GameManagerExpansion extends PlaceholderExpansion implements ICompo
      * %atg_onlines_<游戏名称>% ：表示游戏的在线人数
      * %atg_status_<游戏名称>% ：表示游戏的状态：等待中、进行中、已结束、已关闭
      * %atg_timeleft_<游戏名称>% ：表示游戏当前状态的剩余时间
-     * %arg_players_<游戏名称>% ：表示当游戏当前的所有玩家
+     * %atg_player_game% ：表示当前玩家所在的游戏
+     * %atg_party_owner% ：表示队长名字
+     * %atg_party_ready% ：表示玩家是否准备就绪
+     * %atg_party_role% ：表示队伍角色：host/guest
      *
      * @param player
      * @param params
@@ -112,8 +115,8 @@ public class GameManagerExpansion extends PlaceholderExpansion implements ICompo
         }
 
         // 返回指定游戏内的在线玩家数
-        if (params.startsWith("onlines_")) {
-            String gameName = params.replace("onlines_", "");
+        if (params.startsWith("online_")) {
+            String gameName = params.replace("online_", "");
             IGame game = getGameManager().get(gameName);
             if (game != null) return String.valueOf(game.getOnlinePlayers().size());
             return String.valueOf(0);
@@ -159,26 +162,76 @@ public class GameManagerExpansion extends PlaceholderExpansion implements ICompo
             if (timer != null) return StringUtil.formatTime(timer.getCurrent());
         }
 
-        // 获取游戏中的在线玩家名称
-        if (params.startsWith("players_")) {
-            String gameName = params.replace("players_", "");
-            String playerNames = "";
-            IGame game = getGameManager().get(gameName);
+        if (params.startsWith("player_game")) {
+            IGame game = getPlayerGameManager().get(player.getUniqueId());
             if (game == null) return "";
-            if (game instanceof PvPGame) {
-                PvPGame pvp = (PvPGame) game;
-                for (Party party : pvp.getGameParties().values()) {
-                    String partyColor = ChatColor.WHITE + "";
-                    if (party != null && party.getPartyName() != null) partyColor = party.getPartyName().toString();
-                    for (Player pp : party.getOnlinePlayers()) {
-                        playerNames += partyColor + pp.getName() + ";";
-                    }
-                }
-                return playerNames;
-            }
+            return game.getName();
         }
 
+        if (params.startsWith("party_ready")) {
+            IGame game = getPlayerGameManager().get(player.getUniqueId());
+            if (game instanceof PvPGame) {
+                PvPGame pvpGame = (PvPGame) game;
+                if (isHostParty(player)) return pvpGame.isHostReady() ? "yes" : "no";
+                if (isGuestParty(player)) return pvpGame.isGuestReady() ? "yes" : "no";
+            }
+            return "no";
+        }
 
+        if (params.startsWith("party_owner")) {
+            Party party = getPlayerPartyManager().get(player.getUniqueId());
+            if (party != null) return party.getOwnerName();
+            return "";
+        }
+
+        if (params.startsWith("party_role")) {
+            if (isHostParty(player)) return "host";
+            if (isGuestParty(player)) return "guest";
+            return "";
+        }
+
+        // 获取游戏中的在线玩家名称
+//        if (params.startsWith("players_")) {
+//            String gameName = params.replace("players_", "");
+//            String playerNames = "";
+//            IGame game = getGameManager().get(gameName);
+//            if (game == null) return "";
+//            if (game instanceof PvPGame) {
+//                PvPGame pvp = (PvPGame) game;
+//                for (Party party : pvp.getGameParties().values()) {
+//                    String partyColor = ChatColor.WHITE + "";
+//                    if (party != null && party.getPartyName() != null) partyColor = party.getChatColor() + "";
+//                    for (Player pp : party.getOnlinePlayers()) {
+//                        playerNames += partyColor + pp.getName() + ";";
+//                    }
+//                }
+//                return playerNames;
+//            }
+//        }
         return "";
+    }
+
+    private boolean isHostParty(Player player) {
+        IGame game = getPlayerGameManager().get(player.getUniqueId());
+        if (game instanceof PvPGame) {
+            PvPGame pvpGame = (PvPGame) game;
+            Party party = getPlayerPartyManager().get(player.getUniqueId());
+            if (party != null && party.equals(pvpGame.getHostParty())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isGuestParty(Player player) {
+        IGame game = getPlayerGameManager().get(player.getUniqueId());
+        if (game instanceof PvPGame) {
+            PvPGame pvpGame = (PvPGame) game;
+            Party party = getPlayerPartyManager().get(player.getUniqueId());
+            if (party != null && party.equals(pvpGame.getGuestParty())) {
+                return true;
+            }
+        }
+        return false;
     }
 }

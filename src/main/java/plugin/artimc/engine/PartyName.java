@@ -94,26 +94,8 @@ public enum PartyName {
         }
     }
 
-
     @Override
     public String toString() {
-        switch (this) {
-            case RED:
-                return "§c";
-            case ORANGE:
-                return "§6";
-            case YELLOW:
-                return "§e";
-            case GREEN:
-                return "§a";
-            case LIME:
-                return "§b";
-            case BLUE:
-                return "§9";
-            case PURPLE:
-                return "§5";
-            default:
-                return "§r";
-        }
+        return super.toString();
     }
 }
