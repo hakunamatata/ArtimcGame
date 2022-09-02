@@ -16,6 +16,8 @@ import net.kyori.adventure.text.Component;
 import plugin.artimc.ArtimcManager;
 import plugin.artimc.ArtimcPlugin;
 import plugin.artimc.common.AbstractComponent;
+import plugin.artimc.engine.event.PartyLeaveGameEvent;
+import plugin.artimc.engine.event.PlayerLeaveGameEvent;
 import plugin.artimc.scoreboard.BaseScoreboard;
 import plugin.artimc.scoreboard.PartyScoreboard;
 
@@ -292,40 +294,32 @@ public class Party extends AbstractComponent {
         return false;
     }
 
+    /**
+     * 玩家离开队伍
+     *
+     * @param player
+     * @return
+     */
     public boolean leave(UUID player) {
         if (remove(player)) {
+            if (game != null) {
+                game.onPlayerLeaveGame(new PlayerLeaveGameEvent(game, player));
+                if (size() == 0) {
+                    game.onPartyLeaveGame(new PartyLeaveGameEvent(game, this));
+                }
+            }
             scoreboard.remove(player);
+            OfflinePlayer p = getServer().getOfflinePlayer(player);
+            if (p.isOnline()) {
+                updateScoreboardOnPlayerEvent((Player) p);
+            }
             return true;
         }
         return false;
     }
 
-    /**
-     * 玩家离开队伍
-     *
-     * @param player
-     * @return
-     */
-    public boolean leave(Player player) {
-        if (remove(player.getUniqueId())) {
-            scoreboard.remove(player.getUniqueId());
-            onPlayerLeaveParty(player);
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * 玩家离开队伍
-     *
-     * @param player
-     * @return
-     */
     public boolean leave(OfflinePlayer player) {
-        if (player.isOnline()) {
-            return leave((Player) player);
-        }
-        return remove(player.getUniqueId());
+        return leave(player.getUniqueId());
     }
 
     /**
@@ -690,18 +684,6 @@ public class Party extends AbstractComponent {
      * @param player
      */
     protected void onPlayerJoinParty(Player player) {
-        updateScoreboardOnPlayerEvent(player);
-    }
-
-    /**
-     * 当玩家离开队伍时执行
-     *
-     * @param player
-     */
-    protected void onPlayerLeaveParty(Player player) {
-//        if (game != null) {
-//            game.leaveGame(player);
-//        }
         updateScoreboardOnPlayerEvent(player);
     }
 

@@ -437,31 +437,16 @@ public class PvPGame extends Game {
 
     @Override
     public Location getRespawnLocation(Player player) {
-        if (getHostParty().contains(player)) {
+        if (!Party.isEmpty(getHostParty()) && getHostParty().contains(player)) {
             return getMap().getSpawn().get("host");
         }
 
-        if (getGuestParty().contains(player)) {
+        if (!Party.isEmpty(getGuestParty()) && getGuestParty().contains(player)) {
             return getMap().getSpawn().get("guest");
         }
+        return super.getRespawnLocation(player);
 
-        return null;
     }
-
-    //
-//    @Override
-//    public void onPlayerRespawn(PlayerRespawnEvent event) {
-//        int period = getGameMap().getInvinciblePeriod();
-//        Player player = event.getPlayer();
-//        if (getHostParty().contains(player)) {
-//            event.setRespawnLocation(getGameMap().getSpawn().get("host"));
-//            givePlayerEffect(new PvPGameInvincibleEffect(player, period, this));
-//        } else if (getGuestParty().contains(player)) {
-//            event.setRespawnLocation(getGameMap().getSpawn().get("guest"));
-//            givePlayerEffect(new PvPGameInvincibleEffect(player, period, this));
-//        } else event.setRespawnLocation(getGameMap().getSpawn().get("default"));
-//        super.onPlayerRespawn(event);
-//    }
 
     @Override
     public void onPlayerDamageByPlayer(Player player, Player damager, EntityDamageByEntityEvent eventSource) {

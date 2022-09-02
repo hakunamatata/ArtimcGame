@@ -33,7 +33,7 @@ public class KickCommand extends DefaultCommand {
             throw new IllegalStateException(getLocaleString("command.ur-not-party-owner"));
 
         OfflinePlayer kickee = getPlugin().getServer().getOfflinePlayer(tryGetArg(1));
-        party.leave(kickee);
+        party.leave(kickee.getUniqueId());
         party.sendMessage(Component.text(getLocaleString("command.party-kicked-player")
                 .replace("%player_name%", kickee.getName())));
 

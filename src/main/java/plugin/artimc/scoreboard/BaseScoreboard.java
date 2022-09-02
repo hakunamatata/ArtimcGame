@@ -145,7 +145,6 @@ public abstract class BaseScoreboard {
             PlayerScoreboard ps = getPlayerScoreboard(uuid);
             ps.setTitle(title == null ? "" : title);
             ps.setLines(lines == null ? List.of() : lines);
-
         }
     }
 

@@ -2,6 +2,7 @@ package plugin.artimc.engine;
 
 import org.bukkit.Location;
 import org.bukkit.Server;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
@@ -19,12 +20,15 @@ import plugin.artimc.engine.timer.GameTimer;
 import plugin.artimc.engine.timer.TimerManager;
 import plugin.artimc.engine.timer.custom.CustomTimer;
 import plugin.artimc.engine.timer.effect.PlayerEffect;
+import plugin.artimc.engine.timer.particle.FixedParticle;
 
 import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Logger;
 
 public interface IGame extends Runnable, IComponent, AutoCloseable {
+
+    FileConfiguration getConfig();
 
     String getName();
 
@@ -83,6 +87,8 @@ public interface IGame extends Runnable, IComponent, AutoCloseable {
     void givePlayerEffect(String name, int period, Player player);
 
     void givePlayerEffect(PlayerEffect effect);
+
+    void createFixedParticle(FixedParticle particleTimer);
 
     void startTimer(CustomTimer timer);
 

@@ -8,16 +8,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.gmail.filoghost.holographicdisplays.api.HologramsAPI;
 import com.onarandombox.MultiverseCore.MultiverseCore;
 import com.sk89q.worldedit.bukkit.WorldEditPlugin;
-import net.kyori.adventure.text.Component;
+import dev.esophose.playerparticles.api.PlayerParticlesAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Material;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import plugin.artimc.commands.AdminCommand;
@@ -35,7 +31,8 @@ public final class ArtimcPlugin extends JavaPlugin {
     private MultiverseCore multiverseCore = null;
     private WorldEditPlugin worldEditPlugin = null;
 
-    private final HologramsAPI hologramsAPI = null;
+    private boolean playerParticleEnabled = false;
+    private PlayerParticlesAPI particlesAPI = null;
 
     @Override
     public void onEnable() {
@@ -75,6 +72,22 @@ public final class ArtimcPlugin extends JavaPlugin {
         } else {
             getLogger().info("============== Game Item Pickup Event Disabled ==============");
         }
+
+        if (Bukkit.getPluginManager().isPluginEnabled("PlayerParticles")) {
+            playerParticleEnabled = true;
+            particlesAPI = PlayerParticlesAPI.getInstance();
+            getLogger().info("============== PlayerParticles Enabled ==============");
+        } else {
+            getLogger().info("============== PlayerParticles Disabled ==============");
+        }
+    }
+
+    public boolean isPlayerParticleEnabled() {
+        return playerParticleEnabled;
+    }
+
+    public PlayerParticlesAPI getParticlesAPI() {
+        return particlesAPI;
     }
 
     @Override

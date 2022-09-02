@@ -298,7 +298,7 @@ public abstract class Game extends GameRunnable implements IGameListener {
         getCompanion().getGameParties().remove(event.getParty().getPartyName());
         event.getParty().setGame(null);
         event.getParty().setPartyName(null);
-        event.getParty().setScoreboard(new PartyScoreboard(getObserveParty().getScoreboard(), event.getParty()));
+        event.getParty().setScoreboard(new PartyScoreboard(event.getParty().getScoreboard(), event.getParty()));
         event.getParty().updateScoreboard();
     }
 

@@ -1,20 +1,5 @@
 debug: true
 
-# +-----------------------------------------------------------------------------------+ #
-#
-#                                     Storage Settings
-#
-# +-----------------------------------------------------------------------------------+ #
-# MySQL、H2
-storage-method: MySQL
-data:
-  host: 127.0.0.1
-  database: artimcgame
-  username: ''
-  password: ''
-  table-prefix: ''
-
-
 #队伍聊天频道设置
 chat:
   format: "&b[%party_name%] %player_name%: %message%"
@@ -34,6 +19,8 @@ settings:
   max-join: 4
   #捡起物品的距离
   pickup-distance: 2
+  #复活延迟（秒）
+  respawn-delay: 10
 
 #游戏大厅
 lobby:

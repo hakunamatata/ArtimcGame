@@ -30,6 +30,10 @@ public class Companion {
         return getGameLocaleString("not-party-onwer-join-game");
     }
 
+    final String ERR_YOU_CAN_NOT_JOIN() {
+        return getGameLocaleString("u-can-not-join");
+    }
+
     private Game game;
     private final Party observeParty;
     private final Map<PartyName, Party> parties;
@@ -161,32 +165,39 @@ public class Companion {
      * @param player
      */
     public void addCompanion(Player player) {
-        Party playerParty = getManager().getPlayerParty(player);
-        // 玩家没有队伍，获取未满的队伍
-        if (playerParty == null) {
-            playerParty = getUnfullParty();
-            // 表示玩家加入了观察者
-            if (observeParty.equals(playerParty)) {
-                observerJoin(player);
+        // 等待中，分配队伍
+        if (game.isWaiting()) {
+            Party playerParty = getManager().getPlayerParty(player);
+            // 玩家没有队伍，获取未满的队伍
+            if (playerParty == null) {
+                playerParty = getUnfullParty();
+                // 表示玩家加入了观察者
+                if (observeParty.equals(playerParty)) {
+                    observerJoin(player);
+                }
+                // 表示玩家加入了队伍
+                else {
+                    playerJoin(player, playerParty);
+                }
             }
-            // 表示玩家加入了队伍
+            // 如果玩家有队伍
+            // 检查队伍的入场条件
             else {
-                playerJoin(player, playerParty);
+                // 队伍已经满了
+                if (parties.size() >= getMaxParties()) throw new IllegalStateException(ERR_PARTY_OVERLOAD());
+                // 玩家队伍成员超标
+                if (playerParty.size() > getMaxMembers()) throw new IllegalStateException(ERR_MEMBER_OVERLOAD());
+                // 队伍已经在游戏中
+                if (contains(playerParty)) throw new IllegalStateException(ERR_ALREADY_IN_GAME());
+                // 只有队长才能带领队伍进入游戏
+                if (!playerParty.isOwner(player)) throw new IllegalStateException(ERR_ONLY_PARTY_OWNER_CAN_JOIN_GAME());
+                // 整支队伍加入游戏
+                partyJoin(playerParty);
             }
         }
-        // 如果玩家有队伍
-        // 检查队伍的入场条件
+        // 其他 情况加入观察者
         else {
-            // 队伍已经满了
-            if (parties.size() >= getMaxParties()) throw new IllegalStateException(ERR_PARTY_OVERLOAD());
-            // 玩家队伍成员超标
-            if (playerParty.size() > getMaxMembers()) throw new IllegalStateException(ERR_MEMBER_OVERLOAD());
-            // 队伍已经在游戏中
-            if (contains(playerParty)) throw new IllegalStateException(ERR_ALREADY_IN_GAME());
-            // 只有队长才能带领队伍进入游戏
-            if (!playerParty.isOwner(player)) throw new IllegalStateException(ERR_ONLY_PARTY_OWNER_CAN_JOIN_GAME());
-            // 整支队伍加入游戏
-            partyJoin(playerParty);
+            observerJoin(player);
         }
     }
 
@@ -284,9 +295,8 @@ public class Companion {
      * @param party  当前加入的队伍
      */
     private void playerJoin(Player player, Party party) {
-
         // 玩家加入的队伍，在游戏中不存在
-        if (!parties.containsKey(party)) {
+        if (!parties.containsValue(party)) {
             party.setOwner(player);
             party.join(player);
             addNewParty(party);

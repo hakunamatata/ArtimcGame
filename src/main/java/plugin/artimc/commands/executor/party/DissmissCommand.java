@@ -29,7 +29,7 @@ public class DissmissCommand extends DefaultCommand {
         for (int i = 0; i < uuids.length; i++) {
             UUID uuid = (UUID) uuids[i];
             OfflinePlayer removee = getPlugin().getServer().getOfflinePlayer(uuid);
-            if (party.leave(removee)) {
+            if (party.leave(uuid)) {
                 if (removee.isOnline())
                     ((Player) removee).sendMessage(Component.text(getLocaleString("command.party-dismissed").replace("%player_name%", player.getName())));
             }

@@ -1,6 +1,7 @@
 package plugin.artimc.engine;
 
 import org.bukkit.*;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
@@ -17,6 +18,7 @@ import plugin.artimc.engine.timer.effect.PlayerEffect;
 import plugin.artimc.engine.timer.internal.FinishPeriodTimer;
 import plugin.artimc.engine.timer.internal.GamePeriodTimer;
 import plugin.artimc.engine.timer.internal.WaitPeriodTimer;
+import plugin.artimc.engine.timer.particle.FixedParticle;
 import plugin.artimc.engine.world.GameWorld;
 
 import java.util.*;
@@ -131,6 +133,11 @@ public abstract class GameRunnable extends BukkitRunnable implements IGame {
         if (!debug) return;
         String prefix = String.format("[%s]: ", getGameName());
         getPlugin().getLogger().info(prefix + message);
+    }
+
+    @Override
+    public FileConfiguration getConfig() {
+        return getPlugin().getConfig();
     }
 
     @Deprecated
@@ -744,6 +751,16 @@ public abstract class GameRunnable extends BukkitRunnable implements IGame {
     @Override
     public void givePlayerEffect(String name, int period, Player player) {
         timerManager.startTimer(new PlayerEffect(name, player, period, this));
+    }
+
+    @Override
+    public void createFixedParticle(FixedParticle particleTimer) {
+        if (getPlugin().isPlayerParticleEnabled()) timerManager.startTimer(particleTimer);
+    }
+
+    @Override
+    public @NotNull Location getRespawnLocation(Player player) {
+        return getMap().getLobby();
     }
 
     @Override

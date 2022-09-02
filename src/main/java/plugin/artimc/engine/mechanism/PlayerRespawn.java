@@ -5,12 +5,14 @@ import net.kyori.adventure.title.TitlePart;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import plugin.artimc.engine.IGame;
 import plugin.artimc.engine.Mechanism;
 import plugin.artimc.engine.timer.effect.PlayerEffect;
+import plugin.artimc.engine.timer.particle.DeadParticleFixedEffect;
 import plugin.artimc.engine.title.BlinkTitle;
 
 import java.util.*;
@@ -39,14 +41,20 @@ public class PlayerRespawn extends Mechanism {
         UUID player = event.getPlayer().getUniqueId();
         if (playerDeadLocations.containsKey(player)) {
             // 立即从死亡地点复活
-            event.setRespawnLocation(playerDeadLocations.get(player));
+            Location deadLocation = playerDeadLocations.get(player);
+            if (deadLocation.getY() <= -64) {
+                // 防止掉虚空起不来
+                event.setRespawnLocation(getGame().getRespawnLocation(event.getPlayer()));
+            } else {
+                event.setRespawnLocation(playerDeadLocations.get(player));
+            }
         }
         super.onPlayerRespawn(event);
         spectators.add(player);
 
         // 复活之后, 如果游戏还在进行中
         if (getGame().isGaming()) {
-            getGame().givePlayerEffect(new PlayerEffect("player-respawn-mechanism", event.getPlayer(), 10, getGame()) {
+            getGame().givePlayerEffect(new PlayerEffect("player-respawn-mechanism", event.getPlayer(), getGame().getConfig().getInt("settings.respawn-delay ", 10), getGame()) {
                 @Override
                 protected void onStart() {
                     if (spectators.contains(getPlayer().getUniqueId())) {
@@ -81,6 +89,7 @@ public class PlayerRespawn extends Mechanism {
     @Override
     public void onPlayerDeath(PlayerDeathEvent event) {
         playerDeadLocations.put(event.getPlayer().getUniqueId(), event.getPlayer().getLocation());
+        getGame().createFixedParticle(new DeadParticleFixedEffect(event.getPlayer().getLocation(), getGame()));
         super.onPlayerDeath(event);
     }
 

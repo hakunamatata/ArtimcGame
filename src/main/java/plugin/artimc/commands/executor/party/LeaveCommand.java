@@ -22,7 +22,7 @@ public class LeaveCommand extends DefaultCommand {
         if (party.isOwner(player))
             throw new IllegalStateException(getLocaleString("command.owner-cant-leave"));
 
-        if (party.leave(player)) {
+        if (party.leave(player.getUniqueId())) {
             party.sendMessage(getLocaleString("command.player-leave-party").replace("%player_name%", player.getName()));
             player.sendMessage(getLocaleString("command.u-have-left-party"));
             return true;

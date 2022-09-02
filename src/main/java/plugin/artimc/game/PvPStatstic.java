@@ -140,9 +140,8 @@ public class PvPStatstic {
              * 击杀*10 + 助攻*2 - 死亡*5
              */
             int combatPerformance = partyKills.getOrDefault(pn, 0) * 10
-                    + partyAssists.getOrDefault(pn, 0) * 2
-                    - partyDeaths.getOrDefault(pn, 0) * 5;
-            combatPerformance = combatPerformance >= 0 ? combatPerformance : 0;
+                    + partyAssists.getOrDefault(pn, 0) * 2;
+            combatPerformance = Math.max(combatPerformance, 0);
             double damagePerformance = party_damage / 10;
             int resourcePerformance = getPartyExtraScore(party);
             return damagePerformance + combatPerformance + resourcePerformance;

@@ -8,6 +8,7 @@ softdepend:
   - Multiverse-Core
   - FastAsyncWorldEdit
   - HolographicDisplays
+  - PlayerParticles
 permissions:
   artimc.place.barrier:
     description: 是否允许防止屏障方块

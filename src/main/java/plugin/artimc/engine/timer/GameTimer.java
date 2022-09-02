@@ -1,6 +1,7 @@
 package plugin.artimc.engine.timer;
 
 import org.bukkit.plugin.Plugin;
+import plugin.artimc.ArtimcPlugin;
 import plugin.artimc.engine.GameRunnable;
 import plugin.artimc.engine.IGame;
 
@@ -55,7 +56,7 @@ public abstract class GameTimer {
         this.game = game;
     }
 
-    public Plugin getPlugin() {
+    public ArtimcPlugin getPlugin() {
         return game.getPlugin();
     }
 
