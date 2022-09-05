@@ -21,6 +21,7 @@ import plugin.artimc.engine.timer.TimerManager;
 import plugin.artimc.engine.timer.custom.CustomTimer;
 import plugin.artimc.engine.timer.effect.PlayerEffect;
 import plugin.artimc.engine.timer.particle.FixedParticle;
+import plugin.artimc.engine.world.GameWorld;
 
 import java.util.Set;
 import java.util.UUID;
@@ -35,6 +36,8 @@ public interface IGame extends Runnable, IComponent, AutoCloseable {
     GameMap getMap();
 
     String getWorldName();
+
+    GameWorld getGameWorld();
 
     Set<UUID> getPlayers();
 
@@ -73,6 +76,8 @@ public interface IGame extends Runnable, IComponent, AutoCloseable {
     void addCompanion(Player player);
 
     void removeCompanion(Player player);
+
+    void onGameTimerFinish(GameTimer timer);
 
     void sendMessage(String message);
 

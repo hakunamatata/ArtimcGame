@@ -19,6 +19,14 @@ public abstract class AbstractMechanism extends AbstractComponent {
         return game;
     }
 
+    public void onGameStart(IGame game) {
+
+    }
+
+    public void onGameFinish(IGame game) {
+
+    }
+
     public void onWaitPeriodUpdate(GameTimer timer) {
 
     }
@@ -34,6 +42,10 @@ public abstract class AbstractMechanism extends AbstractComponent {
     public void onGameTimerUpdate(GameTimer timer) {
 
     }
+
+    public void onGameTimerFinish(GameTimer timer) {
+    }
+
 
     public void onPlayerJoin(PlayerJoinEvent event) {
 

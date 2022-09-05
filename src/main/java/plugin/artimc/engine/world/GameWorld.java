@@ -52,6 +52,10 @@ public class GameWorld {
         return world;
     }
 
+    private void setWorld(World world) {
+        this.world = world;
+    }
+
     public WorldStatus getStatus() {
         return status;
     }
@@ -111,6 +115,7 @@ public class GameWorld {
                 BukkitWorld world = new BukkitWorld(plugin.getServer().getWorld(name));
                 ClipboardFormats.findByFile(schema).load(schema).paste(world, BlockVector3.at(0, baseHeight, 0), false, false, (Transform) null);
                 setStatus(WorldStatus.READY);
+                setWorld(plugin.getServer().getWorld(name));
                 plugin.getLogger().info(String.format("%s 地形已经重置 ", name));
             } catch (Exception e) {
                 e.printStackTrace();

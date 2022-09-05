@@ -12,21 +12,12 @@ public class ResourceDropTimer extends CustomStatusTimer {
         super(period, title, barColor, barStyle, game);
     }
 
-    public ResourceDropTimer(int period, String title, GameRunnable game) {
-        super(period, title, game);
-    }
-
-    public ResourceDropTimer(int period, GameRunnable game) {
-        super(period, game);
-    }
-
     public ResourceDropTimer(int period, String title, BarColor barColor, GameRunnable game) {
         super(period, title, barColor, game);
     }
 
     @Override
     protected void onStart() {
-        //getGame().getTimerManager().pauseTimer(TimerManager.GAME_PERIOD_TIMER);
         super.onStart();
     }
 
@@ -39,7 +30,6 @@ public class ResourceDropTimer extends CustomStatusTimer {
             }
         }
         super.onFinish();
-        //getGame().getTimerManager().unPauseTimer(TimerManager.GAME_PERIOD_TIMER);
     }
 
     @Override

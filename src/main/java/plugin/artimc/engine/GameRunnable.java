@@ -38,7 +38,6 @@ public abstract class GameRunnable extends BukkitRunnable implements IGame {
     protected GameMap gameMap;
     private final StatusBar statusBar;
     private final String gameName;
-    private GameWorld gameWorld;
     private int currentTick = 0;
     private boolean running = false;
     private GameStatus gameStatus;
@@ -62,8 +61,8 @@ public abstract class GameRunnable extends BukkitRunnable implements IGame {
         this.gameStatus = GameStatus.INITIALIZED;
         this.statusBar = new StatusBar(this);
         this.timerManager = new TimerManager(this);
-        this.players = new HashSet<>();
         this.nameTagManager = new NameTagManager(this);
+        this.players = new HashSet<>();
         this.mechanisms = new HashSet<>();
         onInitialization();
         getGameManager().add(gameName, this);
@@ -92,11 +91,7 @@ public abstract class GameRunnable extends BukkitRunnable implements IGame {
     }
 
     private void initializeGameWorld() {
-        gameWorld = getWorldManager().get(getWorldName());
-        if (gameWorld == null) {
-            gameWorld = new GameWorld(getWorldName(), getMap().getEnvironment(), getPlugin());
-            getWorldManager().add(getWorldName(), gameWorld);
-        }
+        GameWorld gameWorld = getGameWorld();
         // 隐藏成就
         gameWorld.getWorld().setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
         // 死亡不掉落
@@ -163,7 +158,13 @@ public abstract class GameRunnable extends BukkitRunnable implements IGame {
         return gameMap.getWorldName();
     }
 
+    @Override
     public GameWorld getGameWorld() {
+        GameWorld gameWorld = getWorldManager().get(getWorldName());
+        if (gameWorld == null) {
+            gameWorld = new GameWorld(getWorldName(), getMap().getEnvironment(), getPlugin());
+            getWorldManager().add(getWorldName(), gameWorld);
+        }
         return gameWorld;
     }
 
@@ -458,8 +459,14 @@ public abstract class GameRunnable extends BukkitRunnable implements IGame {
      *
      * @param timer
      */
+    @Override
     public void onGameTimerUpdate(GameTimer timer) {
         dispatchMechanisms(p -> p.onGameTimerUpdate(timer));
+    }
+
+    @Override
+    public void onGameTimerFinish(GameTimer timer) {
+        dispatchMechanisms(p -> p.onGameTimerFinish(timer));
     }
 
     /**
@@ -521,6 +528,7 @@ public abstract class GameRunnable extends BukkitRunnable implements IGame {
             timerManager.startingGame();
             // 执行游戏开始事件
             onGameStart();
+            dispatchMechanisms(p -> p.onGameStart(this));
             log(String.format("游戏开始 tick: %s", getCurrentTick()));
         } catch (Exception e) {
             e.printStackTrace();
@@ -532,6 +540,7 @@ public abstract class GameRunnable extends BukkitRunnable implements IGame {
         try {
             // 执行游戏结束事件
             onGameFinish(finishReason);
+            dispatchMechanisms(p -> p.onGameFinish(this));
             log(String.format("游戏结束，原因: %s, tick: %s", finishReason, getCurrentTick()));
             // 时间管理器执行游戏结束
             timerManager.finishingGame();
@@ -539,7 +548,6 @@ public abstract class GameRunnable extends BukkitRunnable implements IGame {
             e.printStackTrace();
         }
     }
-
 
     private void gameClose(CloseReason closeReason) {
         gameStatus = GameStatus.CLOSING;

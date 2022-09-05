@@ -6,6 +6,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import plugin.artimc.ArtimcPlugin;
 import plugin.artimc.engine.FinishReason;
+import plugin.artimc.engine.mechanism.FillContainer;
 import plugin.artimc.engine.timer.GameTimer;
 import plugin.artimc.engine.Party;
 import plugin.artimc.engine.event.GameItemPickupEvent;
@@ -31,6 +32,7 @@ public class LogFactoryGame extends PvPGame {
 
     public LogFactoryGame(String pvpGameName, ArtimcPlugin plugin) {
         super(pvpGameName, plugin);
+        addMechanism(new FillContainer(this));
     }
 
     @Override

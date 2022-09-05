@@ -1,5 +1,7 @@
 package plugin.artimc.utils;
 
+import org.bukkit.Material;
+
 public class StringUtil {
 
     private StringUtil() {
@@ -39,14 +41,44 @@ public class StringUtil {
         String string = "";
         if (hours > 0) {
             string += hours + ":";
-            if (minutes < 10)
-                string += "0";
+            if (minutes < 10) string += "0";
         }
         string += minutes + ":";
-        if (seconds < 10)
-            string += "0";
+        if (seconds < 10) string += "0";
         string += seconds;
         return string;
+    }
+
+    public static String tryGet(int index, String... args) {
+        try {
+            return args[index];
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    public static int tryGetInt(int index, String... args) {
+        try {
+            return Integer.parseInt(args[index]);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    public static double tryGetDouble(int index, String... args) {
+        try {
+            return Double.parseDouble(args[index]);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    public static Material tryGetMaterial(int index, String... args) {
+        try {
+            return Material.valueOf(args[index].toUpperCase());
+        } catch (Exception e) {
+            return Material.AIR;
+        }
     }
 
 }

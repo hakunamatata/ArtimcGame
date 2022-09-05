@@ -23,16 +23,59 @@ resources:
   timer:
     period: 20
     freq: 120
-
+  #经验值
   experience:
     base: 100
     multiple: 2
-
+  #随机的资源物品
   items:
     - "emerald:4,emerald:8,emerald:12,emerald:16,emerald:20,emerald:24,emerald:28,emerald:32,diamond:1,diamond:2,diamond:3,diamond:4;-11,73,-15"
     - "oak_log:16,spruce_log:16,jungle_log:16,acacia_log:16,dark_oak_log:16;37,73,29"
     - "oak_log:32,spruce_log:32,jungle_log:32,acacia_log:32,dark_oak_log:32,oak_log:64,spruce_log:64,jungle_log:64,acacia_log:64,dark_oak_log:64;35,74,41"
     - "oak_log:16,spruce_log:16,jungle_log:16,acacia_log:16,dark_oak_log:16;23,74,39"
+
+  #容器方块，提供资源
+  blocks:
+    # 中间木桶
+    - "barrel:south 2,70,-1;apple:1,apple:3,cooked_chicken:5,,,;random"
+    - "barrel:up 2,69,-1;iron_ingot:1,,,,;random"
+    - "barrel:east 3,69,-1;bread:1,bread:1,bread:1,,,,,;random3"
+    - "barrel:east 4,69,-1;cake:1,,,,,;random"
+    # 伐木区
+    - "barrel:up 13,69,28;iron_ingot:1,grass_block:16,cobblestone:16,,,,;random2"
+    - "barrel:east 25,71,12;iron_ingot:1,grass_block:16,cobblestone:16,,,,;random2"
+    # 箭塔
+    - "chest:east -35,89,-39;arraw:16,firework_rocket:8,iron_ingot:1;random"
+    # 工厂
+    - "chest:west -1,77,-24;iron_ingot:1,iron_ingot:1,iron_ingot:1,iron_ingot:1,,,,,;random3"
+    # 休息区
+    - "barrel:west 16,71,4;cooked_chicken:2,cooked_chicken:4,cooked_chicken:8,cooked_beef:2,cooked_beef:4,cooked_beef:8,gold_nugget:1,gold_nugget:2,gold_nugget:4,baked_potato:8,cooked_porkchop:4,bucket:1,water_bucket:1,tropical_fish_bucket:1,fishing_rod:1,gold_ingot:1,,,,,,,,,,,,,,,,,,,,,;random2"
+    - "barrel:west 16,70,4;cooked_chicken:2,cooked_chicken:4,cooked_chicken:8,cooked_beef:2,cooked_beef:4,cooked_beef:8,gold_nugget:1,gold_nugget:2,gold_nugget:4,baked_potato:8,cooked_porkchop:4,bucket:1,water_bucket:1,tropical_fish_bucket:1,fishing_rod:1,gold_ingot:1,,,,,,,,,,,,,,,,,,,,,;random2"
+    - "chest:west 16,71,5;cooked_chicken:2,cooked_chicken:4,cooked_chicken:8,cooked_beef:2,cooked_beef:4,cooked_beef:8,gold_nugget:1,gold_nugget:2,gold_nugget:4,baked_potato:8,cooked_porkchop:4,bucket:1,water_bucket:1,tropical_fish_bucket:1,fishing_rod:1,gold_ingot:1,,,,,,,,,,,,,,,,,,,,,;random2"
+    - "chest:west 16,70,5;cooked_chicken:2,cooked_chicken:4,cooked_chicken:8,cooked_beef:2,cooked_beef:4,cooked_beef:8,gold_nugget:1,gold_nugget:2,gold_nugget:4,baked_potato:8,cooked_porkchop:4,bucket:1,water_bucket:1,tropical_fish_bucket:1,fishing_rod:1,gold_ingot:1,,,,,,,,,,,,,,,,,,,,,;random2"
+    - "barrel:west 16,72,6;cooked_chicken:2,cooked_chicken:4,cooked_chicken:8,cooked_beef:2,cooked_beef:4,cooked_beef:8,gold_nugget:1,gold_nugget:2,gold_nugget:4,baked_potato:8,cooked_porkchop:4,bucket:1,water_bucket:1,tropical_fish_bucket:1,fishing_rod:1,gold_ingot:1,,,,,,,,,,,,,,,,,,,,,;random2"
+    - "barrel:west 16,71,6;cooked_chicken:2,cooked_chicken:4,cooked_chicken:8,cooked_beef:2,cooked_beef:4,cooked_beef:8,gold_nugget:1,gold_nugget:2,gold_nugget:4,baked_potato:8,cooked_porkchop:4,bucket:1,water_bucket:1,tropical_fish_bucket:1,fishing_rod:1,gold_ingot:1,,,,,,,,,,,,,,,,,,,,,;random2"
+    - "barrel:west 16,70,6;cooked_chicken:2,cooked_chicken:4,cooked_chicken:8,cooked_beef:2,cooked_beef:4,cooked_beef:8,gold_nugget:1,gold_nugget:2,gold_nugget:4,baked_potato:8,cooked_porkchop:4,bucket:1,water_bucket:1,tropical_fish_bucket:1,fishing_rod:1,gold_ingot:1,,,,,,,,,,,,,,,,,,,,,;random2"
+
+    - "barrel:south 3,72,19;cooked_chicken:2,cooked_chicken:4,cooked_chicken:8,cooked_beef:2,cooked_beef:4,cooked_beef:8,gold_nugget:1,gold_nugget:2,gold_nugget:4,baked_potato:8,cooked_porkchop:4,bucket:1,water_bucket:1,tropical_fish_bucket:1,fishing_rod:1,gold_ingot:1,,,,,,,,,,,,,,,,,,,,,;random2"
+    - "barrel:south 3,71,19;cooked_chicken:2,cooked_chicken:4,cooked_chicken:8,cooked_beef:2,cooked_beef:4,cooked_beef:8,gold_nugget:1,gold_nugget:2,gold_nugget:4,baked_potato:8,cooked_porkchop:4,bucket:1,water_bucket:1,tropical_fish_bucket:1,fishing_rod:1,gold_ingot:1,,,,,,,,,,,,,,,,,,,,,;random2"
+    - "barrel:south 3,70,19;cooked_chicken:2,cooked_chicken:4,cooked_chicken:8,cooked_beef:2,cooked_beef:4,cooked_beef:8,gold_nugget:1,gold_nugget:2,gold_nugget:4,baked_potato:8,cooked_porkchop:4,bucket:1,water_bucket:1,tropical_fish_bucket:1,fishing_rod:1,gold_ingot:1,,,,,,,,,,,,,,,,,,,,,;random2"
+
+    - "chest:south 4,71,19;cooked_chicken:2,cooked_chicken:4,cooked_chicken:8,cooked_beef:2,cooked_beef:4,cooked_beef:8,gold_nugget:1,gold_nugget:2,gold_nugget:4,baked_potato:8,cooked_porkchop:4,bucket:1,water_bucket:1,tropical_fish_bucket:1,fishing_rod:1,gold_ingot:1,,,,,,,,,,,,,,,,,,,,,;random2"
+    - "chest:south 4,70,19;cooked_chicken:2,cooked_chicken:4,cooked_chicken:8,cooked_beef:2,cooked_beef:4,cooked_beef:8,gold_nugget:1,gold_nugget:2,gold_nugget:4,baked_potato:8,cooked_porkchop:4,bucket:1,water_bucket:1,tropical_fish_bucket:1,fishing_rod:1,gold_ingot:1,,,,,,,,,,,,,,,,,,,,,;random2"
+    - "barrel:south 5,71,19;cooked_chicken:2,cooked_chicken:4,cooked_chicken:8,cooked_beef:2,cooked_beef:4,cooked_beef:8,gold_nugget:1,gold_nugget:2,gold_nugget:4,baked_potato:8,cooked_porkchop:4,bucket:1,water_bucket:1,tropical_fish_bucket:1,fishing_rod:1,gold_ingot:1,,,,,,,,,,,,,,,,,,,,,;random2"
+    - "barrel:south 5,70,19;cooked_chicken:2,cooked_chicken:4,cooked_chicken:8,cooked_beef:2,cooked_beef:4,cooked_beef:8,gold_nugget:1,gold_nugget:2,gold_nugget:4,baked_potato:8,cooked_porkchop:4,bucket:1,water_bucket:1,tropical_fish_bucket:1,fishing_rod:1,gold_ingot:1,,,,,,,,,,,,,,,,,,,,,;random2"
+    # 杂物
+    - "barrel:north 15,76,8;charcoal:8,stick:8,string:8,gunpowder:2,book:1,bowl:1,emerald:1,emerald:2,egg:8,flint:1,,,,,,,,,,,;random2"
+    - "barrel:north 15,75,8;charcoal:8,stick:8,string:8,gunpowder:2,book:1,bowl:1,emerald:1,emerald:2,egg:8,flint:1,,,,,,,,,,,;random2"
+    - "barrel:north 16,76,8;charcoal:8,stick:8,string:8,gunpowder:2,book:1,bowl:1,emerald:1,emerald:2,egg:8,flint:1,,,,,,,,,,,;random2"
+    - "barrel:north 16,75,8;charcoal:8,stick:8,string:8,gunpowder:2,book:1,bowl:1,emerald:1,emerald:2,egg:8,flint:1,,,,,,,,,,,;random2"
+
+    - "barrel:west 13,74,16;charcoal:8,stick:8,string:8,gunpowder:2,book:1,bowl:1,emerald:1,emerald:2,egg:8,flint:1,,,,,,,,,,,;random2"
+    - "barrel:west 13,74,17;charcoal:8,stick:8,string:8,gunpowder:2,book:1,bowl:1,emerald:1,emerald:2,egg:8,flint:1,,,,,,,,,,,;random2"
+  #单位实体，实体资源
+  entities:
+
 modes:
 
 

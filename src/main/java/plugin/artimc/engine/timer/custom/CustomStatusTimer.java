@@ -62,6 +62,7 @@ public class CustomStatusTimer extends StatusTimer {
 
     @Override
     protected void onFinish() {
+        getGame().onGameTimerFinish(this);
         getStatusBar().setSyncDefaultStatusBar(true);
         super.onFinish();
     }

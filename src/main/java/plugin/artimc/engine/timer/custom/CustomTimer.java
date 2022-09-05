@@ -26,7 +26,7 @@ public class CustomTimer extends GameTimer {
 
     @Override
     protected void onFinish() {
-
+        getGame().onGameTimerFinish(this);
     }
 
     @Override
